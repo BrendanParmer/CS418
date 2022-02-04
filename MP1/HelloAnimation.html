@@ -1,8 +1,9 @@
 <!DOCTYPE HTML> 
 <html lang="en"> 
 <head>
-<title>Hello Animation</title>
+<title>bparmer2 MP1</title>
 <meta charset="utf-8"> 
+<link rel="stylesheet" type = "text/css" href="styles.css">
 </head>
  
 <script id="shader-vs" type="x-shader/x-vertex">#version 300 es
@@ -41,14 +42,29 @@
 <script src="gl-matrix-min.js"></script>  
 <script src="HelloAnimation.js"></script>  
 
-<body onload="startup();">
-  <canvas id="myGLCanvas" width="500" height="500"></canvas>
+<body onload="startup();" class = "flex">
+  <div>
+    <canvas id="myGLCanvas" width="500" height="500"></canvas>
+  </div>
+  <div style="margin-left: 2em;">
+    <h1>Animation settings:</h1>
+    <h2>Speeds</h2>
+    <div>
+        <input type="range" id="scale" name="scale" min="-3" max="3" value="1" step="0.01">
+        <label for="scale">Scale</label>
+    </div>
+    <div>
+      <input type="range" id="x-t" name="x-t" min="-1" max="1" value="0" step="0.01">
+      <label for="x-t">X-Translation</label>
+    </div>
+    <div>
+      <input type="range" id="y-t" name="y-t" min="-1" max="1" value="0" step="0.01">
+      <label for="y-t">Y-Translation</label>
+    </div>
+    <div>
+      <input type="range" id="vertex_deform" name="vertex_deform" min="-3" max="3" step="0.01">
+      <label for="vertex_deform">Vertex Deformation</label>
+    </div>
+  </div>
 </body>
-
-<p>Animation settings:</p>
-<div>
-  <input type="range" id="speed" name="speed" min="0" max="100" value="5">
-  <label for="speed">Rotation speed</label>
-</div>
-
 </html>

@@ -1,6 +1,6 @@
 /**
  * @file A simple WebGL example drawing a triangle with colors
- * @author Eric Shaffer <shaffer1@eillinois.edu>
+ * @author Brendan Parmer <bparmer2@illinois.edu>
  * 
  * Updated Spring 2021 to use WebGL 2.0 and GLSL 3.00
  */
@@ -23,15 +23,20 @@ var vertexColorBuffer;
 /** @global The vertex array object for the triangle */
 var vertexArrayObject;
 
-/** @global The rotation angle of our triangle */
-var rotAngle = 0;
-
 /** @global The ModelView matrix contains any modeling and viewing transformations */
 var modelViewMatrix = glMatrix.mat4.create();
 
+/** @global Scale matrix on the z-axis */
+var yScaleMatrix = glMatrix.mat4.create();
+
+/** @global Translation matrix */
+var translationMatrix = glMatrix.mat4.create();
+
+/** @global Matrix we send along to the vertex shader */
+var finalMatrix = glMatrix.mat4.create();
+
 /** @global Records time last frame was rendered */
 var previousTime = 0;
-
 
 /**
  * Translates degrees to radians
@@ -146,16 +151,202 @@ function setupBuffers() {
   vertexPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
 
+  var vertex_deform = document.getElementById("vertex_deform").value;
+  edge_x = Math.abs((Math.cos(vertex_deform*previousTime - 3))**2 * 0.4) + 0.2;
   // Define a triangle in clip coordinates.
-  var vertices = [
-         0.0,  0.5,  0.0,
-        -0.5, -0.5,  0.0,
-         0.5, -0.5,  0.0
+  var block_i = [
+    //top front
+    -edge_x, 0.8,  0.0,
+    -edge_x, 0.45, 0.0,
+    -0.2,    0.45, 0.0,
+
+    -edge_x, 0.8,  0.0,
+     edge_x, 0.8,  0.0,
+    -0.2,   0.45,  0.0,
+
+     edge_x, 0.8,  0.0,
+    -0.2,   0.45,  0.0,
+     0.2,   0.45,  0.0, 
+
+     edge_x, 0.8,  0.0,
+     edge_x, 0.45, 0.0,
+     0.2,    0.45, 0.0,
+    
+    
+    //middle front
+    -0.2,  0.45, 0.0,
+    -0.2, -0.45, 0.0,
+     0.2, -0.45, 0.0,
+
+     0.2, -0.45, 0.0,
+     0.2,  0.45, 0.0,
+    -0.2,  0.45, 0.0,
+    
+    //bottom front
+    -edge_x, -0.8,  0.0,
+    -edge_x, -0.45, 0.0,
+    -0.2,    -0.45, 0.0,
+
+    -edge_x, -0.8,  0.0,
+     edge_x, -0.8,  0.0,
+    -0.2, -0.45, 0.0,
+
+     edge_x, -0.8,  0.0,
+    -0.2,    -0.45, 0.0,
+     0.2,    -0.45, 0.0, 
+
+     edge_x, -0.8,  0.0,
+     edge_x, -0.45, 0.0,
+     0.2,    -0.45, 0.0,
+
+    /**
+    //top back
+    -0.6, 0.8,  -0.3,
+    -0.6, 0.45, -0.3,
+    -0.2, 0.45, -0.3,
+
+    -0.6, 0.8,  -0.3,
+     0.6, 0.8,  -0.3,
+    -0.2, 0.45, -0.3,
+
+     0.6, 0.8,  -0.3,
+    -0.2, 0.45, -0.3,
+     0.2, 0.45, -0.3, 
+
+     0.6, 0.8,  -0.3,
+     0.6, 0.45, -0.3,
+     0.2, 0.45, -0.3,
+
+    //middle back
+    -0.2,  0.45, -0.3,
+    -0.2, -0.45, -0.3,
+     0.2, -0.45, -0.3,
+
+     0.2, -0.45, -0.3,
+     0.2,  0.45, -0.3,
+    -0.2,  0.45, -0.3,
+      
+    //bottom back
+    -0.6, -0.8,  -0.3,
+    -0.6, -0.45, -0.3,
+    -0.2, -0.45, -0.3,
+
+    -0.6, -0.8,  -0.3,
+     0.6, -0.8,  -0.3,
+    -0.2, -0.45, -0.3,
+
+     0.6, -0.8,  -0.3,
+    -0.2, -0.45, -0.3,
+     0.2, -0.45, -0.3, 
+
+     0.6, -0.8,  -0.3,
+     0.6, -0.45, -0.3,
+     0.2, -0.45, -0.3,
+    
+    //siding top
+    -0.6, 0.8,  0.0,
+     0.6, 0.8,  0.0,
+    -0.6, 0.8, -0.3,
+
+    -0.6, 0.8, -0.3,
+     0.6, 0.8,  0.0,
+     0.6, 0.8, -0.3,
+    
+    -0.6, 0.8,   0.0,
+    -0.6, 0.45, -0.3,
+    -0.6, 0.45,  0.0,
+
+    -0.6, 0.8,   0.0,
+    -0.6, 0.45, -0.3,
+    -0.6, 0.8,  -0.3,
+
+     0.6, 0.8,   0.0,
+     0.6, 0.45, -0.3,
+     0.6, 0.45,  0.0,
+
+     0.6, 0.8,   0.0,
+     0.6, 0.45, -0.3,
+     0.6, 0.8,  -0.3,
+
+    -0.6, 0.45,  0.0,
+    -0.2, 0.45, -0.3,
+    -0.6, 0.45, -0.3,
+
+    -0.6, 0.45,  0.0,
+    -0.2, 0.45, -0.3,
+    -0.2, 0.45,  0.0,
+
+     0.6, 0.45,  0.0,
+     0.2, 0.45, -0.3,
+     0.6, 0.45, -0.3,
+
+     0.6, 0.45,  0.0,
+     0.2, 0.45, -0.3,
+     0.2, 0.45,  0.0,
+
+    //siding middle
+    -0.2,  0.45,  0.0,
+    -0.2, -0.45, -0.3,
+    -0.2, -0.45,  0.0,
+
+    -0.2,  0.45,  0.0,
+    -0.2, -0.45, -0.3,
+    -0.2,  0.45, -0.3,
+
+     0.2,  0.45,  0.0,
+     0.2, -0.45, -0.3,
+     0.2, -0.45,  0.0,
+
+     0.2,  0.45,  0.0,
+     0.2, -0.45, -0.3,
+     0.2,  0.45, -0.3,
+
+    //siding bottom
+    -0.6, -0.8,  0.0,
+     0.6, -0.8,  0.0,
+    -0.6, -0.8, -0.3,
+
+    -0.6, -0.8, -0.3,
+     0.6, -0.8,  0.0,
+     0.6, -0.8, -0.3,
+    
+    -0.6, -0.8,   0.0,
+    -0.6, -0.45, -0.3,
+    -0.6, -0.45,  0.0,
+
+    -0.6, -0.8,   0.0,
+    -0.6, -0.45, -0.3,
+    -0.6, -0.8,  -0.3,
+
+     0.6, -0.8,   0.0,
+     0.6, -0.45, -0.3,
+     0.6, -0.45,  0.0,
+
+     0.6, -0.8,   0.0,
+     0.6, -0.45, -0.3,
+     0.6, -0.8,  -0.3,
+
+    -0.6, -0.45,  0.0,
+    -0.2, -0.45, -0.3,
+    -0.6, -0.45, -0.3,
+
+    -0.6, -0.45,  0.0,
+    -0.2, -0.45, -0.3,
+    -0.2, -0.45,  0.0,
+
+     0.6, -0.45,  0.0,
+     0.2, -0.45, -0.3,
+     0.6, -0.45, -0.3,
+
+     0.6, -0.45,  0.0,
+     0.2, -0.45, -0.3,
+     0.2, -0.45,  0.0
+     */
   ];
   // Populate the buffer with the position data.
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block_i), gl.STATIC_DRAW);
   vertexPositionBuffer.itemSize = 3;
-  vertexPositionBuffer.numberOfItems = 3;
+  vertexPositionBuffer.numberOfItems = block_i.length / vertexPositionBuffer.itemSize;
 
   // Binds the buffer that we just made to the vertex position attribute.
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 
@@ -164,14 +355,14 @@ function setupBuffers() {
   // Do the same steps for the color buffer.
   vertexColorBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
-  var colors = [
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0
-    ];
+  var orange = [0.867, 0.204, 0.012, 1.0];
+  var colors = [];
+  for (var i = 0; i < vertexPositionBuffer.numberOfItems; i++) {
+    colors = colors.concat(orange);
+  }
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
   vertexColorBuffer.itemSize = 4;
-  vertexColorBuffer.numItems = 3;  
+  vertexColorBuffer.numItems = colors.length;  
   gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 
                          vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
     
@@ -199,7 +390,7 @@ function draw() {
     
   // Send the ModelView matrix with our transformations to the vertex shader.
   gl.uniformMatrix4fv(shaderProgram.modelViewMatrixUniform,
-                      false, modelViewMatrix);
+                      false, finalMatrix);
     
   // Render the triangle. 
   gl.drawArrays(gl.TRIANGLES, 0, vertexPositionBuffer.numberOfItems);
@@ -214,23 +405,33 @@ function draw() {
  * each frame.
  */
  function animate(currentTime) {
-  // Read the speed slider from the web page.
-  var speed = document.getElementById("speed").value;
+  // Read sliders from the website
 
+  var scale = document.getElementById("scale").value / 5;
+  var x_t = document.getElementById("x-t").value;
+  var y_t = document.getElementById("y-t").value;
   // Convert the time to seconds.
   currentTime *= 0.001;
   // Subtract the previous time from the current time.
-  var deltaTime = currentTime - previousTime;
+  //var deltaTime = currentTime - previousTime;
   // Remember the current time for the next frame.
   previousTime = currentTime;
-     
-  // Update geometry to rotate 'speed' degrees per second.
-  rotAngle += speed * deltaTime;
-  if (rotAngle > 360.0)
-      rotAngle = 0.0;
-  glMatrix.mat4.fromZRotation(modelViewMatrix, degToRad(rotAngle));
-  setupBuffers();     
+  
+  // Update geometry to rotate 'speed' degrees per second about the z-axis
+  y_scale = Math.sin(scale * currentTime);
 
+  
+  glMatrix.mat4.fromScaling(yScaleMatrix, glMatrix.vec3.fromValues(1, y_scale, 1));
+  //console.log(yScaleMatrix);
+  //apply scaling
+  glMatrix.mat4.multiply(finalMatrix, yScaleMatrix, modelViewMatrix);
+
+  //set up translation matrix
+  x_t = 0.4*Math.sin(currentTime*x_t + 2);
+  y_t = 0.2*Math.sin(currentTime*y_t + 5);
+  glMatrix.mat4.fromTranslation(translationMatrix, glMatrix.vec3.fromValues(x_t, y_t, 0));
+  glMatrix.mat4.multiply(finalMatrix, finalMatrix, translationMatrix);
+  setupBuffers();
   // Draw the frame.
   draw();
   
@@ -249,7 +450,7 @@ function draw() {
   gl = createGLContext(canvas);
   setupShaders(); 
   setupBuffers();
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearColor(0.075, 0.161, 0.294, 1.0);
   requestAnimationFrame(animate); 
 }
 
