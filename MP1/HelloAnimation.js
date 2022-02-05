@@ -40,6 +40,13 @@ var previousTime = 0;
 
 /** @global Which animation to use */
 var animation = 0;
+
+/** @global moon vertex positions */
+var moon = []
+
+/** @global moon vertex colors */
+var moon_colors = [];
+
 /**
  * Translates degrees to radians
  * @param {Number} degrees Degree input to function
@@ -344,7 +351,6 @@ function setupBuffersIllini() {
      0.2, -0.45,  0.0
      */
   ];
-  console.log(block_i);
   // Populate the buffer with the position data.
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block_i), gl.STATIC_DRAW);
   vertexPositionBuffer.itemSize = 3;
@@ -388,43 +394,7 @@ function setupBuffersMystery() {
   vertexPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
 
-  //vertices
-  var m0 =   [ 0.0,    0.0, 0.0]
 
-  var m1_0 = [ 0.0,    1.0, 0.0]
-  var m1_1 = [ 0.866,  0.5, 0.0]
-  var m1_2 = [ 0.866, -0.5, 0.0]
-  var m1_3 = [ 0.0,   -1.0, 0.0]
-  var m1_4 = [-0.866, -0.5, 0.0]
-  var m1_5 = [-0.866,  0.5, 0.0]
-
-  var m2_0 = [ 0.0,  1.806, 0.0]
-  var m2_1 = [ 0.866,  1.5, 0.0]
-  var m2_2 = [ 1.5,  0.866, 0.0]
-
-  var m2_3 = [ 1.731,  0.0, 0.0]
-  var m2_4 = [ 1.5, -0.866, 0.0]
-  var m2_5 = [ 0.866, -1.5, 0.0]
-
-  var m2_0 = [ 0.0, -1.806, 0.0]
-  var m2_1 = [-0.866, -1.5, 0.0]
-  var m2_2 = [-1.5, -0.866, 0.0]
-
-  var m2_3 = [-1.731,  0.0, 0.0]
-  var m2_4 = [-1.5,  0.866, 0.0]
-  var m2_5 = [-0.866,  1.5, 0.0]
-
-  //moon in clip coords
-  var moon = []
-  moon = moon.concat(
-    //layer one
-    m0, m1_0, m1_1,
-    m0, m1_1, m1_2,
-    m0, m1_2, m1_3,
-    m0, m1_3, m1_4,
-    m0, m1_4, m1_5,
-    m0, m1_5, m1_0
-  )
   //populate the buffer with position data
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(moon), gl.STATIC_DRAW);
   vertexPositionBuffer.itemSize = 3;
@@ -435,11 +405,7 @@ function setupBuffersMystery() {
 
   vertexColorBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
-  var tan = [0.988, 0.965, 0.663, 1.0];
-  var moon_colors = [];
-  for (var i = 0; i < vertexPositionBuffer.numberOfItems; i++) {
-    moon_colors = moon_colors.concat(tan);
-  }
+
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(moon_colors), gl.STATIC_DRAW);
   vertexColorBuffer.itemSize = 4;
   vertexColorBuffer.numItems = moon_colors.length;
@@ -518,7 +484,6 @@ function illini_animate(currentTime) {
   
   // Update geometry to scale along the y-axis
   y_scale = Math.sin(scale * currentTime);
-
   
   glMatrix.mat4.fromScaling(yScaleMatrix, glMatrix.vec3.fromValues(1, y_scale, 1));
 
@@ -527,14 +492,10 @@ function illini_animate(currentTime) {
   glMatrix.mat4.multiply(finalMatrix, yScaleMatrix, modelViewMatrix);
 
   //set up translation matrix
-  x_t = 0.4*Math.sin(currentTime*x_t + 2);
-  y_t = 0.2*Math.sin(currentTime*y_t + 5);
-  console.log("Y scale: " + y_scale);
-  console.log("X_t: " + x_t);
-  console.log("Y_t: " + y_t);
+  x_t = 0.4 * Math.sin(currentTime*x_t + 2);
+  y_t = 0.2 * Math.sin(currentTime*y_t + 5);
   glMatrix.mat4.fromTranslation(translationMatrix, glMatrix.vec3.fromValues(x_t, y_t, 0));
   glMatrix.mat4.multiply(finalMatrix, finalMatrix, translationMatrix);
-  console.log(finalMatrix);
 }
 
 /**
@@ -544,8 +505,24 @@ function mystery_animate(currentTime) {
   currentTime *= 0.001;
   finalMatrix = glMatrix.mat4.create();
   previousTime = currentTime;
-  finalMatrix = modelViewMatrix;
-  console.log(finalMatrix);
+
+  var speed = 1;
+  var rotateAngle = currentTime * speed;
+  while (rotateAngle > 2 * Math.PI) {
+    rotateAngle -= 2 * Math.PI;
+  }
+  moon_scale = 0.8;
+  moon_transform = -1.7;
+  var scaleMatrix       = glMatrix.mat4.create();
+  var rotationMatrix    = glMatrix.mat4.create();
+  var translationMatrix = glMatrix.mat4.create();
+  glMatrix.mat4.fromScaling(scaleMatrix, glMatrix.vec3.fromValues(moon_scale, moon_scale, moon_scale));
+  glMatrix.mat4.fromZRotation(rotationMatrix, rotateAngle);
+  glMatrix.mat4.fromTranslation(translationMatrix, glMatrix.vec3.fromValues(0, moon_transform, 0));
+
+  glMatrix.mat4.multiply(finalMatrix, scaleMatrix, modelViewMatrix);
+  glMatrix.mat4.multiply(finalMatrix, rotationMatrix, finalMatrix);
+  glMatrix.mat4.multiply(finalMatrix, translationMatrix, finalMatrix);
 }
 
 /**
@@ -585,7 +562,77 @@ function clearColor2() {
   //defaults to illini animation
   gl.clearColor(0.075, 0.08, 0.11, 1.0);
   setupBuffersIllini();
-
+  setupMoonArrays();
   requestAnimationFrame(animate);
 }
 
+/**
+ * function that sets up moon vertex positions and colors
+ */
+function setupMoonArrays() {
+  //vertices
+  var m0 =   [ 0.0,    0.0, 0.0]
+
+  var m1_0 = [ 0.0,    1.0, 0.0]
+  var m1_1 = [ 0.866,  0.5, 0.0]
+  var m1_2 = [ 0.866, -0.5, 0.0]
+  var m1_3 = [ 0.0,   -1.0, 0.0]
+  var m1_4 = [-0.866, -0.5, 0.0]
+  var m1_5 = [-0.866,  0.5, 0.0]
+
+  var m2_0 = [ 0.0,  1.806, 0.0]
+  var m2_1 = [ 0.866,  1.5, 0.0]
+  var m2_2 = [ 1.5,  0.866, 0.0]
+
+  var m2_3 = [ 1.731,  0.0, 0.0]
+  var m2_4 = [ 1.5, -0.866, 0.0]
+  var m2_5 = [ 0.866, -1.5, 0.0]
+
+  var m2_6 = [ 0.0, -1.806, 0.0]
+  var m2_7 = [-0.866, -1.5, 0.0]
+  var m2_8 = [-1.5, -0.866, 0.0]
+
+  var m2_9 = [-1.731,  0.0, 0.0]
+  var m2_10 = [-1.5,  0.866, 0.0]
+  var m2_11 = [-0.866,  1.5, 0.0]
+
+  //moon in clip coords
+  moon = moon.concat(
+    //layer one
+    m0, m1_0, m1_1,
+    m0, m1_1, m1_2,
+    m0, m1_2, m1_3,
+    m0, m1_3, m1_4,
+    m0, m1_4, m1_5,
+    m0, m1_5, m1_0,
+
+    //layer two
+    m1_0, m2_0, m2_1,
+    m1_0, m2_1, m1_1,
+    m1_1, m2_1, m2_2,
+    m1_1, m2_2, m2_3,
+    m1_1, m2_3, m1_2,
+    m1_2, m2_3, m2_4,
+    m1_2, m2_4, m2_5,
+    m1_2, m1_3, m2_5,
+    m1_3, m2_5, m2_6,
+
+    m1_3, m2_6, m2_7, 
+    m1_3, m1_4, m2_7,
+    m1_4, m2_7, m2_8,
+    m1_4, m2_8, m2_9,
+    m1_4, m1_5, m2_9,
+    m1_5, m2_9, m2_10,
+    m1_5, m2_10, m2_11,
+    m1_5, m1_0, m2_11,
+    m1_0, m2_11, m2_0
+  );
+
+  for (var i = 0; i < vertexPositionBuffer.numberOfItems; i++) {
+    var r = 0.95 + (Math.random()-0.5)/20.0;
+    var g = 0.9  + (Math.random()-0.5)/20.0;
+    var b = 0.65 + (Math.random()-0.5)/20.0;
+    var tan = [r, g, b, 1.0];
+    moon_colors = moon_colors.concat(tan, tan, tan);
+  }
+}
