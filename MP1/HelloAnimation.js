@@ -38,13 +38,15 @@ var finalMatrix = glMatrix.mat4.create();
 /** @global Records time last frame was rendered */
 var previousTime = 0;
 
+/** @global Which animation to use */
+var animation = 0;
 /**
  * Translates degrees to radians
  * @param {Number} degrees Degree input to function
  * @return {Number} The radians that correspond to the degree input
  */
 function degToRad(degrees) {
-        return degrees * Math.PI / 180;
+  return degrees * Math.PI / 180;
 }
 
 
@@ -138,10 +140,9 @@ function setupShaders() {
 
 
 /**
- * Set up the buffers to hold the triangle's vertex positions and colors.
+ * Set up the buffers to hold the vertex positions and colors for the illini animation
  */
-function setupBuffers() {
-    
+function setupBuffersIllini() {
   // Create the vertex array object, which holds the list of attributes for
   // the triangle.
   vertexArrayObject = gl.createVertexArray();
@@ -153,7 +154,7 @@ function setupBuffers() {
 
   var vertex_deform = document.getElementById("vertex_deform").value;
   edge_x = Math.abs((Math.cos(vertex_deform*previousTime - 3))**2 * 0.4) + 0.2;
-  // Define a triangle in clip coordinates.
+  // Define Block I in clip coordinates.
   var block_i = [
     //top front
     -edge_x, 0.8,  0.0,
@@ -343,6 +344,7 @@ function setupBuffers() {
      0.2, -0.45,  0.0
      */
   ];
+  console.log(block_i);
   // Populate the buffer with the position data.
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block_i), gl.STATIC_DRAW);
   vertexPositionBuffer.itemSize = 3;
@@ -374,6 +376,80 @@ function setupBuffers() {
   gl.bindVertexArray(null);
 }
 
+/**
+ * Set up the vertex and color buffers for the mystery animation
+ */
+function setupBuffersMystery() {
+  //create VAO
+  vertexArrayObject = gl.createVertexArray();
+  gl.bindVertexArray(vertexArrayObject);
+
+  //create vertex position buffer
+  vertexPositionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
+
+  //vertices
+  var m0 =   [ 0.0,    0.0, 0.0]
+
+  var m1_0 = [ 0.0,    1.0, 0.0]
+  var m1_1 = [ 0.866,  0.5, 0.0]
+  var m1_2 = [ 0.866, -0.5, 0.0]
+  var m1_3 = [ 0.0,   -1.0, 0.0]
+  var m1_4 = [-0.866, -0.5, 0.0]
+  var m1_5 = [-0.866,  0.5, 0.0]
+
+  var m2_0 = [ 0.0,  1.806, 0.0]
+  var m2_1 = [ 0.866,  1.5, 0.0]
+  var m2_2 = [ 1.5,  0.866, 0.0]
+
+  var m2_3 = [ 1.731,  0.0, 0.0]
+  var m2_4 = [ 1.5, -0.866, 0.0]
+  var m2_5 = [ 0.866, -1.5, 0.0]
+
+  var m2_0 = [ 0.0, -1.806, 0.0]
+  var m2_1 = [-0.866, -1.5, 0.0]
+  var m2_2 = [-1.5, -0.866, 0.0]
+
+  var m2_3 = [-1.731,  0.0, 0.0]
+  var m2_4 = [-1.5,  0.866, 0.0]
+  var m2_5 = [-0.866,  1.5, 0.0]
+
+  //moon in clip coords
+  var moon = []
+  moon = moon.concat(
+    //layer one
+    m0, m1_0, m1_1,
+    m0, m1_1, m1_2,
+    m0, m1_2, m1_3,
+    m0, m1_3, m1_4,
+    m0, m1_4, m1_5,
+    m0, m1_5, m1_0
+  )
+  //populate the buffer with position data
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(moon), gl.STATIC_DRAW);
+  vertexPositionBuffer.itemSize = 3;
+  vertexPositionBuffer.numberOfItems = moon.length/vertexPositionBuffer.itemSize;
+
+  //bind the buffer to the VPA
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  vertexColorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
+  var tan = [0.988, 0.965, 0.663, 1.0];
+  var moon_colors = [];
+  for (var i = 0; i < vertexPositionBuffer.numberOfItems; i++) {
+    moon_colors = moon_colors.concat(tan);
+  }
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(moon_colors), gl.STATIC_DRAW);
+  vertexColorBuffer.itemSize = 4;
+  vertexColorBuffer.numItems = moon_colors.length;
+  gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+  gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+
+  gl.bindVertexArray(null);
+}
 
 /**
  * Draws a frame to the screen.
@@ -384,6 +460,7 @@ function draw() {
 
   // Clear the screen.
   gl.clear(gl.COLOR_BUFFER_BIT);
+  clearColor2();
 
   // Use the vertex array object that we set up.
   gl.bindVertexArray(vertexArrayObject);
@@ -404,12 +481,34 @@ function draw() {
  * Animates the triangle by updating the ModelView matrix with a rotation
  * each frame.
  */
- function animate(currentTime) {
-  // Read sliders from the website
+function animate(currentTime) {
+  if (animation == 0) {
+    illini_animate(currentTime);
+    setupShaders();
+    setupBuffersIllini();
+  }
+  else {
+    mystery_animate(currentTime);
+    setupShaders();
+    setupBuffersMystery();
+  }
+  // Draw the frame.
+  draw();
+  
+  // Animate the next frame. The animate function is passed the current time in
+  // milliseconds.
+  requestAnimationFrame(animate);
+  update_html();
+}
 
+/**
+ * Animation rules for Illini animate
+ */
+function illini_animate(currentTime) {
+  // Read sliders from the website
   var scale = document.getElementById("scale").value / 5;
-  var x_t = document.getElementById("x-t").value;
-  var y_t = document.getElementById("y-t").value;
+  var x_t   = document.getElementById("x-t").value;
+  var y_t   = document.getElementById("y-t").value;
   // Convert the time to seconds.
   currentTime *= 0.001;
   // Subtract the previous time from the current time.
@@ -417,30 +516,63 @@ function draw() {
   // Remember the current time for the next frame.
   previousTime = currentTime;
   
-  // Update geometry to rotate 'speed' degrees per second about the z-axis
+  // Update geometry to scale along the y-axis
   y_scale = Math.sin(scale * currentTime);
 
   
   glMatrix.mat4.fromScaling(yScaleMatrix, glMatrix.vec3.fromValues(1, y_scale, 1));
-  //console.log(yScaleMatrix);
+
+  finalMatrix = glMatrix.mat4.create();
   //apply scaling
   glMatrix.mat4.multiply(finalMatrix, yScaleMatrix, modelViewMatrix);
 
   //set up translation matrix
   x_t = 0.4*Math.sin(currentTime*x_t + 2);
   y_t = 0.2*Math.sin(currentTime*y_t + 5);
+  console.log("Y scale: " + y_scale);
+  console.log("X_t: " + x_t);
+  console.log("Y_t: " + y_t);
   glMatrix.mat4.fromTranslation(translationMatrix, glMatrix.vec3.fromValues(x_t, y_t, 0));
   glMatrix.mat4.multiply(finalMatrix, finalMatrix, translationMatrix);
-  setupBuffers();
-  // Draw the frame.
-  draw();
-  
-  // Animate the next frame. The animate function is passed the current time in
-  // milliseconds.
-  requestAnimationFrame(animate);
+  console.log(finalMatrix);
 }
 
+/**
+ * Animation rules for mystery animate
+ */
+function mystery_animate(currentTime) {
+  currentTime *= 0.001;
+  finalMatrix = glMatrix.mat4.create();
+  previousTime = currentTime;
+  finalMatrix = modelViewMatrix;
+  console.log(finalMatrix);
+}
 
+/**
+ * Update the HTML based on the animation chosen
+ */
+function update_html() {
+  animation = document.getElementById("picker").value;
+  if (animation == 0) {
+    document.getElementById("Mystery").style.visibility = "hidden";
+    document.getElementById("Illini").style.visibility = "visible";
+  }
+  else {
+    document.getElementById("Illini").style.visibility="hidden";
+    document.getElementById("Mystery").style.visibility="visible";
+  }
+}
+/**
+ * Clear canvas color based on the animation chosen
+ */
+function clearColor2() {
+  if (animation == 0) {
+    gl.clearColor(0.075, 0.08, 0.11, 1.0);
+  }
+  else {
+    gl.clearColor(0.1, 0.1, 0.1, 1.0);
+  }
+}
 /**
  * Startup function called from html code to start the program.
  */
@@ -449,8 +581,11 @@ function draw() {
   canvas = document.getElementById("myGLCanvas");
   gl = createGLContext(canvas);
   setupShaders(); 
-  setupBuffers();
-  gl.clearColor(0.075, 0.161, 0.294, 1.0);
-  requestAnimationFrame(animate); 
+
+  //defaults to illini animation
+  gl.clearColor(0.075, 0.08, 0.11, 1.0);
+  setupBuffersIllini();
+
+  requestAnimationFrame(animate);
 }
 
