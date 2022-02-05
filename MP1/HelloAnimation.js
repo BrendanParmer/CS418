@@ -68,15 +68,6 @@ var lcm = [];
 /** @global lcm vertex colors */
 var lcm_colors = [];
 
-/**
- * Translates degrees to radians
- * @param {Number} degrees Degree input to function
- * @return {Number} The radians that correspond to the degree input
- */
-function degToRad(degrees) {
-  return degrees * Math.PI / 180;
-}
-
 
 /**
  * Creates a context for WebGL
@@ -94,7 +85,6 @@ function createGLContext(canvas) {
   }
   return context;
 }
-
 
 /**
  * Loads a shader.
@@ -131,13 +121,12 @@ function loadShaderFromDOM(id) {
   return shader;
 }
 
-
 /**
  * Set up the fragment and vertex shaders.
  */
 function setupShaders() {
   // Compile the shaders' source code.
-  vertexShader = loadShaderFromDOM("shader-vs");
+  vertexShader   = loadShaderFromDOM("shader-vs");
   fragmentShader = loadShaderFromDOM("shader-fs");
   
   // Link the shaders together into a program.
@@ -154,7 +143,6 @@ function setupShaders() {
   gl.attachShader(lcmShader, lcmFS);
   gl.linkProgram(lcmShader);
   
-
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
     alert("Failed to setup shaders");
   }
@@ -174,7 +162,6 @@ function setupShaders() {
   shaderProgram.modelViewMatrixUniform =
     gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
 }
-
 
 /**
  * Set up the buffers to hold the vertex positions and colors for the illini animation
@@ -447,6 +434,7 @@ function setupMoonBuffer() {
 
   gl.bindVertexArray(null);
 }
+
 /**
  * Set up the vertex and color buffers for the moon
  */
@@ -468,6 +456,7 @@ function setupMoonBuffer() {
   //bind the buffer to the VPA
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
+  //moon color buffer
   vertexColorBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
 
@@ -476,6 +465,7 @@ function setupMoonBuffer() {
   vertexColorBuffer.numItems = moon_colors.length;
   gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
+  //enable VAAs
   gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
   gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
@@ -506,8 +496,6 @@ function setupMoonBuffer() {
   //create vertex position buffer
   lcmVPB = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, lcmVPB);
-
-
 
   //populate the buffer with position data
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lcm), gl.STATIC_DRAW);
@@ -566,10 +554,8 @@ function draw() {
   }
 }
 
-
 /**
- * Animates the triangle by updating the ModelView matrix with a rotation
- * each frame.
+ * General animation function that chooses between Illini and Moon animations
  */
 function animate(currentTime) {
   if (animation == 0) {
@@ -674,6 +660,7 @@ function lcm_animate(currentTime) {
   glMatrix.mat4.multiply(lcmMatrix, translationMatrix, lcmMatrix);
 
 }
+
 /**
  * Update the HTML based on the animation chosen
  */
@@ -688,6 +675,7 @@ function update_html() {
     document.getElementById("Mystery").style.visibility="visible";
   }
 }
+
 /**
  * Clear canvas color based on the animation chosen
  */
@@ -699,6 +687,7 @@ function clearColor2() {
     gl.clearColor(0.1, 0.1, 0.1, 1.0);
   }
 }
+
 /**
  * Startup function called from html code to start the program.
  */
