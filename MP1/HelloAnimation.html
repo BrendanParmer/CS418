@@ -39,6 +39,39 @@
     }
 </script>
 
+<script id="shader_LCM-vs" type="x-shader/x-vertex">#version 300 es
+  #ifdef GL_FRAGMENT_PRECISION_HIGH
+  precision highp float;
+  #else
+  precision mediump float;
+  #endif
+
+  in vec4 aVertexColor;
+  in vec3 aVertexPosition;
+  uniform mat4 uModelViewMatrix;
+  out vec4 vColor;
+
+  void main(void) {
+      gl_Position = uModelViewMatrix * vec4(aVertexPosition, 1.0);
+      vColor = aVertexColor;
+  }
+</script>
+
+<script id="shader_LCM-fs" type="x-shader/x-fragment">#version 300 es
+  #ifdef GL_FRAGMENT_PRECISION_HIGH
+  precision highp float;
+  #else
+  precision mediump float;
+  #endif
+
+  in vec4 vColor;
+  out vec4 fragmentColor;
+
+  void main(void) {
+          fragmentColor = vColor;
+  }
+</script>
+
 <script src="gl-matrix-min.js"></script>  
 <script src="HelloAnimation.js"></script>  
 
@@ -50,8 +83,8 @@
     <h1>Animation settings:</h1>
     <div>
       <label for="picker">Illini</label>
-      <input type="range" id="picker" name="picker" min=0 max=1>
-      <label for="picker">Mystery</label>
+      <input type="range" id="picker" name="picker" min="0" max="1">
+      <label for="picker">Moon</label>
     </div>
     <div id="Illini">
       <h2>Speeds</h2>
@@ -68,12 +101,13 @@
         <label for="y-t">Y-Translation</label>
       </div>
       <div>
-        <input type="range" id="vertex_deform" name="vertex_deform" min="-3" max="3" step="0.01">
+        <input type="range" id="vertex_deform" name="vertex_deform" min="-3" max="3" step="0.01" value="1">
         <label for="vertex_deform">Vertex Deformation</label>
       </div>
     </div>
     <div id="Mystery">
-      <p>mystery</p>
+      <input type="range" id="speed" name="speed" min="0" max="3" step="0.5" value="1">
+      <label for="speed">Speed</label>
     </div>
   </div>
 </body>

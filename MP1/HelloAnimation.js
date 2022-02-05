@@ -14,14 +14,26 @@ var canvas;
 /** @global A simple GLSL shader program */
 var shaderProgram;
 
-/** @global The WebGL buffer holding the triangle */
+/** @global The WebGL buffer holding the main triangles */
 var vertexPositionBuffer;
 
 /** @global The WebGL buffer holding the vertex colors */
 var vertexColorBuffer;
 
-/** @global The vertex array object for the triangle */
+/** @global The vertex array object for the main objects */
 var vertexArrayObject;
+
+/** @global GLSL shader program for the LCM */
+var lcmShader;
+
+/** @global The WebGL buffer holding the rocket triangles */
+var lcmVPB;
+
+/** @global The WebGL buffer holding the LCM vertex colors */
+var lcmVCB;
+
+/** @global The vertex array object for the LCM */
+var lcmVAO;
 
 /** @global The ModelView matrix contains any modeling and viewing transformations */
 var modelViewMatrix = glMatrix.mat4.create();
@@ -35,6 +47,9 @@ var translationMatrix = glMatrix.mat4.create();
 /** @global Matrix we send along to the vertex shader */
 var finalMatrix = glMatrix.mat4.create();
 
+/** @global lcm matrix to send to shader*/
+var lcmMatrix = glMatrix.mat4.create();
+
 /** @global Records time last frame was rendered */
 var previousTime = 0;
 
@@ -42,10 +57,16 @@ var previousTime = 0;
 var animation = 0;
 
 /** @global moon vertex positions */
-var moon = []
+var moon = [];
 
 /** @global moon vertex colors */
 var moon_colors = [];
+
+/** @global lcm vertex positions */
+var lcm = [];
+
+/** @global lcm vertex colors */
+var lcm_colors = [];
 
 /**
  * Translates degrees to radians
@@ -125,12 +146,21 @@ function setupShaders() {
   gl.attachShader(shaderProgram, fragmentShader);
   gl.linkProgram(shaderProgram);
 
+  //shader programs for lunar command module
+  lcmVS = loadShaderFromDOM("shader_LCM-vs");
+  lcmFS = loadShaderFromDOM("shader_LCM-fs");
+  lcmShader = gl.createProgram();
+  gl.attachShader(lcmShader, lcmVS);
+  gl.attachShader(lcmShader, lcmFS);
+  gl.linkProgram(lcmShader);
+  
+
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
     alert("Failed to setup shaders");
   }
-
-  // We only use one shader program for this example, so we can just bind
-  // it as the current program here.
+  if (!gl.getProgramParameter(lcmShader, gl.LINK_STATUS)) {
+    alert("Failed to setup shaders");
+  }
   gl.useProgram(shaderProgram);
     
   // Query the index of each attribute in the list of attributes maintained
@@ -150,6 +180,7 @@ function setupShaders() {
  * Set up the buffers to hold the vertex positions and colors for the illini animation
  */
 function setupBuffersIllini() {
+  
   // Create the vertex array object, which holds the list of attributes for
   // the triangle.
   vertexArrayObject = gl.createVertexArray();
@@ -383,9 +414,43 @@ function setupBuffersIllini() {
 }
 
 /**
- * Set up the vertex and color buffers for the mystery animation
+ * Set up the vertex and color buffers for the moon
  */
-function setupBuffersMystery() {
+function setupMoonBuffer() {
+  //create VAO
+  vertexArrayObject = gl.createVertexArray();
+  gl.bindVertexArray(vertexArrayObject);
+
+  //create vertex position buffer
+  vertexPositionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
+
+
+  //populate the buffer with position data
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(moon), gl.STATIC_DRAW);
+  vertexPositionBuffer.itemSize = 3;
+  vertexPositionBuffer.numberOfItems = moon.length/vertexPositionBuffer.itemSize;
+
+  //bind the buffer to the VPA
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  vertexColorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(moon_colors), gl.STATIC_DRAW);
+  vertexColorBuffer.itemSize = 4;
+  vertexColorBuffer.numItems = moon_colors.length;
+  gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+  gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+
+  gl.bindVertexArray(null);
+}
+/**
+ * Set up the vertex and color buffers for the moon
+ */
+ function setupMoonBuffer() {
   //create VAO
   vertexArrayObject = gl.createVertexArray();
   gl.bindVertexArray(vertexArrayObject);
@@ -418,6 +483,55 @@ function setupBuffersMystery() {
 }
 
 /**
+ * Set up the vertex and color buffers for the moon
+ */
+ function setupLCMBuffer() {
+  gl.useProgram(lcmShader);
+
+  // Query the index of each attribute in the list of attributes maintained
+  // by the GPU. 
+  lcmShader.vertexPositionAttribute =
+    gl.getAttribLocation(lcmShader, "aVertexPosition");
+  lcmShader.vertexColorAttribute =
+    gl.getAttribLocation(lcmShader, "aVertexColor");
+    
+  //Get the index of the Uniform variable as well
+  lcmShader.modelViewMatrixUniform =
+    gl.getUniformLocation(lcmShader, "uModelViewMatrix");
+  
+  //create VAO
+  lcmVAO = gl.createVertexArray();
+  gl.bindVertexArray(lcmVAO);
+
+  //create vertex position buffer
+  lcmVPB = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, lcmVPB);
+
+
+
+  //populate the buffer with position data
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lcm), gl.STATIC_DRAW);
+  lcmVPB.itemSize = 3;
+  lcmVPB.numberOfItems = lcm.length/lcmVPB.itemSize;
+
+  //bind the buffer to the VPA
+  gl.vertexAttribPointer(lcmShader.vertexPositionAttribute, lcmVPB.itemSize, gl.FLOAT, false, 0, 0);
+
+  lcmVCB = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, lcmVCB);
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lcm_colors), gl.STATIC_DRAW);
+  lcmVCB.itemSize = 4;
+  lcmVCB.numItems = lcm_colors.length;
+  gl.vertexAttribPointer(lcmShader.vertexColorAttribute, lcmVCB.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.enableVertexAttribArray(lcmShader.vertexPositionAttribute);
+  gl.enableVertexAttribArray(lcmShader.vertexColorAttribute);
+
+  gl.bindVertexArray(null);
+}
+
+/**
  * Draws a frame to the screen.
  */
 function draw() {
@@ -440,6 +554,16 @@ function draw() {
   
   // Unbind the vertex array object to be safe.
   gl.bindVertexArray(null);
+  
+  if (animation == 1) {
+    //do the same for the lunar command module
+    setupLCMBuffer();
+
+    gl.bindVertexArray(lcmVAO);
+    gl.uniformMatrix4fv(lcmShader.modelViewMatrixUniform, false, lcmMatrix);
+    gl.drawArrays(gl.TRIANGLES, 0, lcmVPB.numberOfItems);
+    gl.bindVertexArray(null);
+  }
 }
 
 
@@ -454,9 +578,10 @@ function animate(currentTime) {
     setupBuffersIllini();
   }
   else {
-    mystery_animate(currentTime);
+    moon_animate(currentTime);
+    lcm_animate(currentTime);
     setupShaders();
-    setupBuffersMystery();
+    setupMoonBuffer();
   }
   // Draw the frame.
   draw();
@@ -501,12 +626,12 @@ function illini_animate(currentTime) {
 /**
  * Animation rules for mystery animate
  */
-function mystery_animate(currentTime) {
+function moon_animate(currentTime) {
   currentTime *= 0.001;
   finalMatrix = glMatrix.mat4.create();
   previousTime = currentTime;
 
-  var speed = 1;
+  var speed = document.getElementById("speed").value;
   var rotateAngle = currentTime * speed;
   while (rotateAngle > 2 * Math.PI) {
     rotateAngle -= 2 * Math.PI;
@@ -525,6 +650,30 @@ function mystery_animate(currentTime) {
   glMatrix.mat4.multiply(finalMatrix, translationMatrix, finalMatrix);
 }
 
+/**
+ * Animation for the LCM
+ */
+function lcm_animate(currentTime) {
+  currentTime *= 0.001;
+  lcmMatrix = glMatrix.mat4.create();
+  previousTime = currentTime;
+
+  var speed = document.getElementById("speed").value;
+  var y = 0.4 * Math.sin(currentTime * speed);
+
+  var lcm_scale = -0.8;
+  var x = 0.0;
+
+  var scaleMatrix = glMatrix.mat4.create();
+  var translationMatrix = glMatrix.mat4.create();
+
+  glMatrix.mat4.fromScaling(scaleMatrix, glMatrix.vec3.fromValues(lcm_scale, lcm_scale, lcm_scale));
+  glMatrix.mat4.fromTranslation(translationMatrix, glMatrix.vec3.fromValues(x, y, 0));
+
+  glMatrix.mat4.multiply(lcmMatrix, scaleMatrix, modelViewMatrix);
+  glMatrix.mat4.multiply(lcmMatrix, translationMatrix, lcmMatrix);
+
+}
 /**
  * Update the HTML based on the animation chosen
  */
@@ -563,6 +712,7 @@ function clearColor2() {
   gl.clearColor(0.075, 0.08, 0.11, 1.0);
   setupBuffersIllini();
   setupMoonArrays();
+  setupLCMArrays();
   requestAnimationFrame(animate);
 }
 
@@ -635,4 +785,81 @@ function setupMoonArrays() {
     var tan = [r, g, b, 1.0];
     moon_colors = moon_colors.concat(tan, tan, tan);
   }
+}
+
+/**
+ * function that sets up the lcm vertex positions and colors
+ */
+function setupLCMArrays() {
+  var v0  = [-0.45, 0.0, 0.0];
+  var v1a = [-0.4, 0.1, 0.0];
+  var v1b = [-0.4, -0.1, 0.0];
+
+  var v2a = [-0.1, 0.3, 0.0];
+  var v2b = [-0.1, 0.1, 0.0];
+  var v2c = [-0.1, -0.1, 0.0];
+  var v2d = [-0.1, -0.3, 0.0];
+
+  var v3a = [0.4, 0.3, 0.0];
+  var v3b = [0.4, 0.1, 0.0];
+  var v3c = [0.4, -0.1, 0.0];
+  var v3d = [0.4, -0.3, 0.0];
+
+  var v4a = [0.6, 0.2, 0.0];
+  var v4b = [0.6, 0.1, 0.0];
+  var v4c = [0.6, -0.1, 0.0];
+  var v4d = [0.6, -0.2, 0.0];
+
+  var v5a = [0.75, 0.25, 0.0];
+  var v5b = [0.75, 0.0, 0.0];
+  var v5c = [0.75, -0.25, 0.0];
+
+  lcm = lcm.concat(
+    v0, v1a, v1b,
+    v1a, v2a, v2b,
+    v1a, v2b, v2c,
+    v1a, v1b, v2c,
+    v1b, v2c, v2d,
+    v2a, v3a, v3b,
+    v2a, v2b, v3b,
+    v2b, v3b, v3c,
+    v2b, v2c, v3c,
+    v2c, v3c, v3d,
+    v2c, v2d, v3d,
+    //booster
+    v3b, v4a, v4b,
+    v3b, v3c, v4b,
+    v3c, v4b, v4c,
+    v3c, v4c, v4d,
+    v4a, v5a, v5b,
+    v4a, v4b, v5b,
+    v4b, v4c, v5b,
+    v4c, v4d, v5b,
+    v4d, v5b, v5c
+  );
+  var grey = [0.5, 0.5, 0.5, 1.0];
+  var dark_grey = [0.2, 0.2, 0.2, 1.0];
+  lcm_colors = lcm_colors.concat(
+    grey, grey, grey, 
+    grey, grey, grey,
+    grey, grey, grey,
+    grey, grey, grey,
+    grey, grey, grey,
+    grey, grey, grey,
+    grey, grey, grey,
+    grey, grey, grey,
+    grey, grey, grey,
+    grey, grey, grey,
+    grey, grey, grey,
+    //booster
+    dark_grey, dark_grey, dark_grey,
+    dark_grey, dark_grey, dark_grey,
+    dark_grey, dark_grey, dark_grey,
+    dark_grey, dark_grey, dark_grey,
+    dark_grey, dark_grey, dark_grey,
+    dark_grey, dark_grey, dark_grey,
+    dark_grey, dark_grey, dark_grey,
+    dark_grey, dark_grey, dark_grey,
+    dark_grey, dark_grey, dark_grey
+  );
 }
