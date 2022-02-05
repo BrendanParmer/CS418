@@ -556,6 +556,7 @@ function draw() {
 
 /**
  * General animation function that chooses between Illini and Moon animations
+ * @param currentTime - time in milliseconds
  */
 function animate(currentTime) {
   if (animation == 0) {
@@ -580,6 +581,7 @@ function animate(currentTime) {
 
 /**
  * Animation rules for Illini animate
+ * @param currentTime - time in milliseconds
  */
 function illini_animate(currentTime) {
   // Read sliders from the website
@@ -611,6 +613,7 @@ function illini_animate(currentTime) {
 
 /**
  * Animation rules for mystery animate
+ * @param currentTime - time in milliseconds
  */
 function moon_animate(currentTime) {
   currentTime *= 0.001;
@@ -638,6 +641,7 @@ function moon_animate(currentTime) {
 
 /**
  * Animation for the LCM
+ * @param currentTime - time in milliseconds
  */
 function lcm_animate(currentTime) {
   currentTime *= 0.001;
