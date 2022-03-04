@@ -1,16 +1,14 @@
 /**
  * @file Terrain.js - A simple 3D terrain model for WebGL
- * @author Ian Rudnick <itr2@illinois.edu>
- * @brief Starter code for CS 418 MP2 at the University of Illinois at
- * Urbana-Champaign.
+ * @author Brendan Parmer <bparmer2@illinois.edu>
+ * @brief Terrain generation code for MP2
  * 
- * Updated Spring 2021 for WebGL 2.0/GLSL 3.00 ES.
  * 
  * You'll need to implement the following functions:
  * setVertex(v, i) - convenient vertex access for 1-D array
  * getVertex(v, i) - convenient vertex access for 1-D array
  * generateTriangles() - generate a flat grid of triangles
- * shapeTerrain() - shape the grid into more interesting terrain
+ * shapeTerrain(iterations) - shape the grid into more interesting terrain
  * calculateNormals() - calculate normals after warping terrain
  * 
  * Good luck! Come to office hours if you get stuck!
@@ -48,7 +46,7 @@
         this.generateLines();
         console.log("Terrain: Generated lines");
 
-        this.shapeTerrain();
+        this.shapeTerrain(1000);
         console.log("Terrain: Sculpted terrain");
 
         this.calculateNormals();
@@ -58,9 +56,18 @@
         //this.printBuffers();
     }
     
+    /**
+     * Return a float in the range [min, max]
+     * @param {number} min minimum number of range
+     * @param {number} max maximum number of range
+     */
+    randFloat(min, max) {
+        //console.log("Min: " + min);
+        //console.log("Max: " + max);
+        return (Math.random() * (max - min)) + min;
+    }
 
     //-------------------------------------------------------------------------
-    // Vertex access and triangle generation - your code goes here!
     /**
      * Set the x,y,z coords of the ith vertex
      * @param {Object} v An array of length 3 holding the x,y,z coordinates.
@@ -89,7 +96,6 @@
      * Generate vertex and face information for 2D plane
      */    
     generateTriangles() {
-        // MP2: Implement the rest of this function!
         var deltaX = (this.maxX - this.minX)/this.div
         var deltaY = (this.maxY - this.minY)/this.div
 
@@ -129,10 +135,36 @@
 
 
     /**
-     * This function does nothing.
+     * Displace vertices with the faulting method
+     * @param {number} iterations how many faults to make
      */
-    shapeTerrain() {
-        // MP2: Implement this function!
+    shapeTerrain(iterations) {
+        var dz = 0.02;
+        for (var i = 0; i < iterations; i++) {
+            var h = (i+1)/iterations;
+            dz = dz/2**h;
+            var p = glMatrix.vec3.fromValues(this.randFloat(this.minX, this.maxX), 
+                                             this.randFloat(this.minY, this.maxY),
+                                             0);
+            var n = glMatrix.vec2.create();
+            glMatrix.vec2.random(n);
+            var n3 = glMatrix.vec3.fromValues(n[0], n[1], 0);
+
+            for (var j = 0; j < this.numVertices; j++) {
+                var b = [0,0,0];
+                this.getVertex(b, j);
+                var sub = glMatrix.vec3.create();
+                glMatrix.vec3.subtract(sub, b, p);
+                var dot = glMatrix.vec3.dot(sub, n3);
+                if (dot > 0) {
+                    b[2] += dz;
+                }
+                else if (dot < 0) {
+                    b[2] -= dz;
+                }
+                this.setVertex(b, j);
+            }
+        }
     }
 
 

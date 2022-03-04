@@ -1,8 +1,7 @@
 /**
  * @file MP2.js - A simple WebGL rendering engine
- * @author Ian Rudnick <itr2@illinois.edu>
- * @brief Starter code for CS 418 MP2 at the University of Illinois at
- * Urbana-Champaign.
+ * @author Brendan Parmer <bparmer2@illinois.edu>
+ * @brief Rendering code for MP2 - Terrain
  * 
  * Updated Spring 2021 for WebGL 2.0/GLSL 3.00 ES.
  */
@@ -75,7 +74,7 @@ function startup() {
   setupShaders();
 
   // Let the Terrain object set up its own buffers.
-  myTerrain = new Terrain(16, -1, 1, -1, 1);
+  myTerrain = new Terrain(64, -1, 1, -1, 1);
   myTerrain.setupBuffers(shaderProgram);
 
   // Set the background color to sky blue (you can change this if you like).
@@ -210,9 +209,10 @@ function draw() {
                             near, far);
   
   // Generate the view matrix using lookat.
-  const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, -1.0);
-  const eyePt = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
-  const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0);
+  //CAMERA STUFF
+  const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, 0.0);
+  const eyePt = glMatrix.vec3.fromValues(2.0, -2.0, 2.0);
+  const up = glMatrix.vec3.fromValues(0.0, 0.0, 1.0);
   glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
 
   setMatrixUniforms();
