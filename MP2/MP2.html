@@ -49,12 +49,14 @@ void main(void) {
     // Transform the vertex position and normal to view coordinates
     vec3 vertexPositionView =(modelViewMatrix * vec4(vertexPosition, 1.0)).xyz;
     vec3 vertexNormalView = normalize(normalMatrix * vertexNormal);
+    vec3 lightView = (modelViewMatrix * vec4(lightPosition, 1.0)).xyz;
 
+    //vec3 lightView = lightPosition;
     // The camera is at the origin in view coordinates
     vec3 cameraPositionView = vec3(0.0, 0.0, 0.0);
     
     // Calculate the three other vectors we need: l, r, and v
-    vec3 lightVector = normalize(lightPosition - vertexPositionView);
+    vec3 lightVector = normalize(lightView - vertexPositionView);
     vec3 reflectionVector = normalize(reflect(-lightVector, vertexNormalView));
     vec3 viewVector = normalize(cameraPositionView - vertexPositionView);
 

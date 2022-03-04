@@ -29,15 +29,15 @@ var normalMatrix = glMatrix.mat3.create();
 /** @global Ambient material color/intensity for Phong reflection */
 var kAmbient = [227/255, 191/255, 76/255];
 /** @global Diffuse material color/intensity for Phong reflection */
-var kDiffuse = [227/255, 191/255, 76/255];
+var kDiffuse = [227/255, 191/255, 255/255];
 /** @global Specular material color/intensity for Phong reflection */
 var kSpecular = [227/255, 191/255, 76/255];
 /** @global Shininess exponent for Phong reflection */
 var shininess = 2;
 
 // Light parameters
-/** @global Light position in VIEW coordinates */
-var lightPosition = [0, 2, 2];
+/** @global Light position in world coordinates */
+var lightPosition = [0, 5, 0];
 /** @global Ambient light color/intensity for Phong reflection */
 var ambientLightColor = [0.1, 0.1, 0.1];
 /** @global Diffuse light color/intensity for Phong reflection */
@@ -210,9 +210,9 @@ function draw() {
   
   // Generate the view matrix using lookat.
   //CAMERA STUFF
-  const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, 0.0);
-  const eyePt = glMatrix.vec3.fromValues(2.0, -2.0, 2.0);
-  const up = glMatrix.vec3.fromValues(0.0, 0.0, 1.0);
+  const lookAtPt = glMatrix.vec3.fromValues(0.5, 0.0, 0.5);
+  const eyePt = glMatrix.vec3.fromValues(-0.75, 1.0, -2);
+  const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0);
   glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
 
   setMatrixUniforms();

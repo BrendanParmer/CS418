@@ -20,15 +20,15 @@
      * @param {number} div Number of triangles along the x-axis and y-axis.
      * @param {number} minX Minimum X coordinate value.
      * @param {number} maxX Maximum X coordinate value.
-     * @param {number} minY Minimum Y coordinate value.
-     * @param {number} maxY Maximum Y coordinate value.
+     * @param {number} minZ Minimum Z coordinate value.
+     * @param {number} maxZ Maximum Z coordinate value.
      */
-    constructor(div, minX, maxX, minY, maxY) {
+    constructor(div, minX, maxX, minZ, maxZ) {
         this.div = div;
         this.minX = minX;
-        this.minY = minY;
+        this.minZ = minZ;
         this.maxX = maxX;
-        this.maxY = maxY;
+        this.maxZ = maxZ;
         
         // Allocate the vertex array
         this.positionData = [];
@@ -62,8 +62,6 @@
      * @param {number} max maximum number of range
      */
     randFloat(min, max) {
-        //console.log("Min: " + min);
-        //console.log("Max: " + max);
         return (Math.random() * (max - min)) + min;
     }
 
@@ -97,14 +95,14 @@
      */    
     generateTriangles() {
         var deltaX = (this.maxX - this.minX)/this.div
-        var deltaY = (this.maxY - this.minY)/this.div
+        var deltaZ = (this.maxZ - this.minZ)/this.div
 
         //generate vertices
         for (var i = 0; i <= this.div; i++) {
             for (var j = 0; j <= this.div; j++) {
                 this.positionData.push(this.minX + deltaX*j);
-                this.positionData.push(this.minY + deltaY*i);
                 this.positionData.push(0);
+                this.positionData.push(this.minZ + deltaZ*i);
             }
         }
 
@@ -130,7 +128,7 @@
         }
         // We'll need these to set up the WebGL buffers.
         this.numVertices = this.positionData.length/3;
-        this.numFaces = this.faceData.length/3;
+        this.numFaces    = this.faceData.length/3;
     }
 
 
@@ -139,16 +137,16 @@
      * @param {number} iterations how many faults to make
      */
     shapeTerrain(iterations) {
-        var dz = 0.02;
+        var dy = 0.02;
         for (var i = 0; i < iterations; i++) {
             var h = (i+1)/iterations;
-            dz = dz/2**h;
+            dy = dy/2**h;
             var p = glMatrix.vec3.fromValues(this.randFloat(this.minX, this.maxX), 
-                                             this.randFloat(this.minY, this.maxY),
-                                             0);
+                                             0,
+                                             this.randFloat(this.minZ, this.maxZ));
             var n = glMatrix.vec2.create();
             glMatrix.vec2.random(n);
-            var n3 = glMatrix.vec3.fromValues(n[0], n[1], 0);
+            var n3 = glMatrix.vec3.fromValues(n[0], 0, n[1]);
 
             for (var j = 0; j < this.numVertices; j++) {
                 var b = [0,0,0];
@@ -157,10 +155,10 @@
                 glMatrix.vec3.subtract(sub, b, p);
                 var dot = glMatrix.vec3.dot(sub, n3);
                 if (dot > 0) {
-                    b[2] += dz;
+                    b[1] += dy;
                 }
                 else if (dot < 0) {
-                    b[2] -= dz;
+                    b[1] -= dy;
                 }
                 this.setVertex(b, j);
             }
@@ -169,11 +167,61 @@
 
 
     /**
-     * This function does nothing.
+     * Generate triangle normals
      */
     calculateNormals() {
-        // MP2: Implement this function!
-       
+        //init normal data
+        for (var i = 0; i < this.numVertices * 3; i++) {
+            this.normalData[i] = 0;
+        }
+        //sum up triangle-weighted normals
+        for (var i = 0; i < this.numFaces; i++) {
+            var i0 = this.faceData[i*3];
+            var i1 = this.faceData[i*3 + 1];
+            var i2 = this.faceData[i*3 + 2];
+
+            var u0 = [0, 0, 0]; 
+            var u1 = [0, 0, 0];
+            var u2 = [0, 0, 0];
+
+            this.getVertex(u0, i0);
+            var v0 = glMatrix.vec3.fromValues(u0[0], u0[1], u0[2]);
+
+            this.getVertex(u1, i1);
+            var v1 = glMatrix.vec3.fromValues(u1[0], u1[1], u1[2]);
+
+            this.getVertex(u2, i2);
+            var v2 = glMatrix.vec3.fromValues(u2[0], u2[1], u2[2]);
+
+            var e0 = glMatrix.vec3.create();
+            glMatrix.vec3.subtract(e0, v1, v0);
+
+            var e1 = glMatrix.vec3.create();
+            glMatrix.vec3.subtract(e1, v2, v0);
+
+            var n = glMatrix.vec3.create();
+            glMatrix.vec3.cross(n, e0, e1);
+
+            for (var j = 0; j < 3; j++) {
+                this.normalData[i0*3 + j] += n[j]/2;
+                this.normalData[i1*3 + j] += n[j]/2;
+                this.normalData[i2*3 + j] += n[j]/2;
+            }
+        }
+
+        for (var i = 0; i < this.numVertices; i++) {
+            var x = this.normalData[i*3];
+            var y = this.normalData[i*3 + 1];
+            var z = this.normalData[i*3 + 2];
+
+            var before = glMatrix.vec3.fromValues(x, y, z);
+            var normed = glMatrix.vec3.create();
+            glMatrix.vec3.normalize(normed, before);
+
+            for (var j = 0; j < 3; j++) {
+                this.normalData[i*3 + j] = normed[j];
+            }
+        }
     }
 
 
