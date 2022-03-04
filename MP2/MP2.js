@@ -37,7 +37,7 @@ var shininess = 2;
 
 // Light parameters
 /** @global Light position in world coordinates */
-var lightPosition = [0, 5, 0];
+var lightPosition = [0, 2, 0];
 /** @global Ambient light color/intensity for Phong reflection */
 var ambientLightColor = [0.1, 0.1, 0.1];
 /** @global Diffuse light color/intensity for Phong reflection */
@@ -74,12 +74,13 @@ function startup() {
   setupShaders();
 
   // Let the Terrain object set up its own buffers.
-  myTerrain = new Terrain(64, -1, 1, -1, 1);
+  var scale = 4;
+  myTerrain = new Terrain(128, -scale, scale, -scale, scale);
   myTerrain.setupBuffers(shaderProgram);
 
   // Set the background color to sky blue (you can change this if you like).
-  //gl.clearColor(0.82, 0.93, 0.99, 1.0);
-  gl.clearColor(0.2, 0.2, 0.2, 1.0);
+  gl.clearColor(0.82, 0.93, 0.99, 1.0);
+  //gl.clearColor(0.2, 0.2, 0.2, 1.0);
   gl.enable(gl.DEPTH_TEST);
   requestAnimationFrame(animate);
 }
@@ -210,14 +211,15 @@ function draw() {
   
   // Generate the view matrix using lookat.
   //CAMERA STUFF
-  const lookAtPt = glMatrix.vec3.fromValues(0.5, 0.0, 0.5);
-  const eyePt = glMatrix.vec3.fromValues(-0.75, 1.0, -2);
+  const lookAtPt = glMatrix.vec3.fromValues(0.5, 0.15, 0);
+  const eyePt = glMatrix.vec3.fromValues(-1, 0.5, 0);
   const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0);
   glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
 
   setMatrixUniforms();
   setLightUniforms(ambientLightColor, diffuseLightColor, specularLightColor,
                    lightPosition);
+  setHeightUniforms(myTerrain.minY, myTerrain.maxY);
   
   // Draw the triangles, the wireframe, or both, based on the render selection.
   if (document.getElementById("polygon").checked) { 
@@ -287,6 +289,15 @@ function setLightUniforms(a, d, s, loc) {
   gl.uniform3fv(shaderProgram.locations.diffuseLightColor, d);
   gl.uniform3fv(shaderProgram.locations.specularLightColor, s);
   gl.uniform3fv(shaderProgram.locations.lightPosition, loc);
+}
+
+/**
+ * 
+ * 
+ */
+function setHeightUniforms(min, max) {
+  gl.uniform1f(shaderProgram.locations.min, min);
+  gl.uniform1f(shaderProgram.locations.max, max);
 }
 
 /**

@@ -4,14 +4,6 @@
  * @brief Terrain generation code for MP2
  * 
  * 
- * You'll need to implement the following functions:
- * setVertex(v, i) - convenient vertex access for 1-D array
- * getVertex(v, i) - convenient vertex access for 1-D array
- * generateTriangles() - generate a flat grid of triangles
- * shapeTerrain(iterations) - shape the grid into more interesting terrain
- * calculateNormals() - calculate normals after warping terrain
- * 
- * Good luck! Come to office hours if you get stuck!
  */
 
  class Terrain {   
@@ -29,6 +21,9 @@
         this.minZ = minZ;
         this.maxX = maxX;
         this.maxZ = maxZ;
+
+        this.minY = Infinity;
+        this.maxY = -Infinity;
         
         // Allocate the vertex array
         this.positionData = [];
@@ -52,6 +47,7 @@
         this.calculateNormals();
         console.log("Terrain: Generated normals");
 
+        this.findHeights();
         // You can use this function for debugging your buffers:
         //this.printBuffers();
     }
@@ -224,7 +220,17 @@
         }
     }
 
-
+    findHeights() {
+        for (var i = 0; i < this.numVertices; i++) {
+            var y = this.positionData[i*3 + 1];
+            if (y > this.maxY) {
+                maxY = y;
+            }
+            if (y < this.minY) {
+                minY = y;
+            }
+        }
+    }
     //-------------------------------------------------------------------------
     // Setup code (run once)
     /**
