@@ -34,6 +34,7 @@ uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat3 normalMatrix;
 
+out vec3 vPos;
 out vec3 vertexPositionView;
 out vec3 lightView;
 
@@ -44,6 +45,7 @@ void main(void) {
     lightView = (modelViewMatrix * vec4(lightPosition, 1.0)).xyz;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPosition, 1.0);
+    vPos = vertexPosition;
 }
 </script>
 
@@ -59,26 +61,62 @@ precision highp float;
 precision mediump float;
 #endif
 
-uniform vec3 kAmbient;
-uniform vec3 kDiffuse;
 uniform vec3 kSpecular;
 uniform float shininess;
 
-
+uniform float minY;
+uniform float maxY;
 
 uniform vec3 ambientLightColor;
 uniform vec3 diffuseLightColor;
 uniform vec3 specularLightColor;
 
+in vec3 vPos;
 in vec3 vertexPositionView;
 in vec3 lightView;
 
 
 out vec4 fragmentColor;
 
+vec3 colorer(float f);
+vec3 inter_colors(float f, float start, float end, vec3 c1, vec3 c2);
+
+//pick color based on height
+vec3 colorer(float f) {
+    vec3 bottom = vec3(159, 126, 252)/255.0;
+    vec3 middle = vec3(21, 163, 137)/255.0;
+    vec3 top    = vec3(126, 252, 157)/255.0;
+    vec3 color;
+    if (f < 0.20) {
+        color = bottom;
+    }
+    else if (f < 0.45) {
+        color = inter_colors(f, 0.2, 0.45, bottom, middle);
+    }
+    else if (f < 0.6) {
+        color = middle;
+    }
+    else if (f < 0.8) {
+        color = inter_colors(f, 0.6, 0.8, middle, top);
+    }
+    else {
+        color = top;
+    }
+    return color;
+}
+
+//linearly interpolate between colors
+vec3 inter_colors(float f, float start, float end, vec3 c1, vec3 c2) {
+    float normed = (f-start)/(end-start);
+    return c1 + (c2 - c1) * normed;
+}
 
 void main(void) {
     vec3 vertexNormalView = normalize(vertexPositionView);
+
+    float normHeight = (vPos.y - minY)/(maxY - minY);
+    vec3 kAmbient = colorer(normHeight);
+    vec3 kDiffuse = colorer(normHeight);
 
     // The camera is at the origin in view coordinates
     vec3 cameraPositionView = vec3(0.0, 0.0, 0.0);

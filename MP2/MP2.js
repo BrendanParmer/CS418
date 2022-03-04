@@ -27,21 +27,21 @@ var normalMatrix = glMatrix.mat3.create();
 
 // Material parameters
 /** @global Ambient material color/intensity for Phong reflection */
-var kAmbient = [227/255, 191/255, 76/255];
+//var kAmbient = [227/255, 191/255, 76/255];
 /** @global Diffuse material color/intensity for Phong reflection */
-var kDiffuse = [227/255, 191/255, 255/255];
+//var kDiffuse = [227/255, 191/255, 255/255];
 /** @global Specular material color/intensity for Phong reflection */
-var kSpecular = [227/255, 191/255, 76/255];
+var kSpecular = [227/255, 227/255, 227/255];
 /** @global Shininess exponent for Phong reflection */
-var shininess = 2;
+var shininess = 100;
 
 // Light parameters
 /** @global Light position in world coordinates */
-var lightPosition = [0, 2, 0];
+var lightPosition = [3, 5, 0];
 /** @global Ambient light color/intensity for Phong reflection */
 var ambientLightColor = [0.1, 0.1, 0.1];
 /** @global Diffuse light color/intensity for Phong reflection */
-var diffuseLightColor = [1, 1, 1];
+var diffuseLightColor = [1.0, 1.0, 1.0];
 /** @global Specular light color/intensity for Phong reflection */
 var specularLightColor = [1, 1, 1];
 
@@ -78,9 +78,8 @@ function startup() {
   myTerrain = new Terrain(128, -scale, scale, -scale, scale);
   myTerrain.setupBuffers(shaderProgram);
 
-  // Set the background color to sky blue (you can change this if you like).
-  gl.clearColor(0.82, 0.93, 0.99, 1.0);
-  //gl.clearColor(0.2, 0.2, 0.2, 1.0);
+  // Set the background color to dark blue
+  gl.clearColor(13/255, 4/255, 40/255, 1.0);
   gl.enable(gl.DEPTH_TEST);
   requestAnimationFrame(animate);
 }
@@ -174,10 +173,6 @@ function setupShaders() {
   shaderProgram.locations.normalMatrix =
     gl.getUniformLocation(shaderProgram, "normalMatrix");
 
-  shaderProgram.locations.kAmbient =
-    gl.getUniformLocation(shaderProgram, "kAmbient");
-  shaderProgram.locations.kDiffuse =
-    gl.getUniformLocation(shaderProgram, "kDiffuse");
   shaderProgram.locations.kSpecular =
     gl.getUniformLocation(shaderProgram, "kSpecular");
   shaderProgram.locations.shininess =
@@ -191,6 +186,11 @@ function setupShaders() {
   gl.getUniformLocation(shaderProgram, "diffuseLightColor");
   shaderProgram.locations.specularLightColor =
   gl.getUniformLocation(shaderProgram, "specularLightColor");
+
+  shaderProgram.locations.minY =
+    gl.getUniformLocation(shaderProgram, "minY");
+  shaderProgram.locations.maxY =
+    gl.getUniformLocation(shaderProgram, "maxY");
 }
 
 /**
@@ -211,11 +211,12 @@ function draw() {
   
   // Generate the view matrix using lookat.
   //CAMERA STUFF
-  const lookAtPt = glMatrix.vec3.fromValues(0.5, 0.15, 0);
-  const eyePt = glMatrix.vec3.fromValues(-1, 0.5, 0);
+  const lookAtPt = glMatrix.vec3.fromValues(0, 0, 0);
+  const eyePt = glMatrix.vec3.fromValues(-4, 0.5, 0);
   const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0);
   glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
 
+  lightPosition[1] = myTerrain.maxY + 1;
   setMatrixUniforms();
   setLightUniforms(ambientLightColor, diffuseLightColor, specularLightColor,
                    lightPosition);
@@ -223,11 +224,11 @@ function draw() {
   
   // Draw the triangles, the wireframe, or both, based on the render selection.
   if (document.getElementById("polygon").checked) { 
-    setMaterialUniforms(kAmbient, kDiffuse, kSpecular, shininess);
+    setMaterialUniforms(kSpecular, shininess);
     myTerrain.drawTriangles();
   }
   else if (document.getElementById("wirepoly").checked) {
-    setMaterialUniforms(kAmbient, kDiffuse, kSpecular, shininess); 
+    setMaterialUniforms(kSpecular, shininess); 
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(1, 1);
     myTerrain.drawTriangles();
@@ -236,7 +237,7 @@ function draw() {
     myTerrain.drawEdges();
   }
   else if (document.getElementById("wireframe").checked) {
-    setMaterialUniforms(kEdgeBlack, kEdgeBlack, kEdgeBlack, shininess);
+    setMaterialUniforms(kEdgeBlack, shininess);
     myTerrain.drawEdges();
   }
 }
@@ -264,14 +265,10 @@ function setMatrixUniforms() {
 
 /**
  * Sends material properties to the shader program.
- * @param {Float32Array} a Ambient material color.
- * @param {Float32Array} d Diffuse material color.
  * @param {Float32Array} s Specular material color.
  * @param {Float32} alpha shininess coefficient
  */
-function setMaterialUniforms(a, d, s, alpha) {
-  gl.uniform3fv(shaderProgram.locations.kAmbient, a);
-  gl.uniform3fv(shaderProgram.locations.kDiffuse, d);
+function setMaterialUniforms(s, alpha) {
   gl.uniform3fv(shaderProgram.locations.kSpecular, s);
   gl.uniform1f(shaderProgram.locations.shininess, alpha);
 }
@@ -296,8 +293,8 @@ function setLightUniforms(a, d, s, loc) {
  * 
  */
 function setHeightUniforms(min, max) {
-  gl.uniform1f(shaderProgram.locations.min, min);
-  gl.uniform1f(shaderProgram.locations.max, max);
+  gl.uniform1f(shaderProgram.locations.minY, min);
+  gl.uniform1f(shaderProgram.locations.maxY, max);
 }
 
 /**

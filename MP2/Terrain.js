@@ -41,7 +41,7 @@
         this.generateLines();
         console.log("Terrain: Generated lines");
 
-        this.shapeTerrain(1000);
+        this.shapeTerrain(5000);
         console.log("Terrain: Sculpted terrain");
 
         this.calculateNormals();
@@ -224,10 +224,10 @@
         for (var i = 0; i < this.numVertices; i++) {
             var y = this.positionData[i*3 + 1];
             if (y > this.maxY) {
-                maxY = y;
+                this.maxY = y;
             }
             if (y < this.minY) {
-                minY = y;
+                this.minY = y;
             }
         }
     }
