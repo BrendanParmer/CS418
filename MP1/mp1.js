@@ -370,7 +370,7 @@ function setupBuffersIllini() {
      */
   ];
   // Populate the buffer with the position data.
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block_i), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block_i), gl.DYNAMIC_DRAW);
   vertexPositionBuffer.itemSize = 3;
   vertexPositionBuffer.numberOfItems = block_i.length / vertexPositionBuffer.itemSize;
 

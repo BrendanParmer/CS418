@@ -55,7 +55,7 @@
         console.log("Terrain: Generated normals");
 
         // You can use this function for debugging your buffers:
-        // this.printBuffers();
+        //this.printBuffers();
     }
     
 
@@ -67,7 +67,9 @@
      * @param {number} i The index of the vertex to set.
      */
     setVertex(v, i) {
-        // MP2: Implement this function!
+        this.positionData[i*3]     = v[0];
+        this.positionData[i*3 + 1] = v[1];
+        this.positionData[i*3 + 2] = v[2];
     }
     
 
@@ -77,16 +79,49 @@
      * @param {number} i The index of the vertex to get.
      */
     getVertex(v, i) {
-        // MP2: Implement this function!
+        v[0] = this.positionData[i*3];
+        v[1] = this.positionData[i*3 + 1];
+        v[2] = this.positionData[i*3 + 2];
     }
 
 
     /**
-     * This function does nothing.
+     * Generate vertex and face information for 2D plane
      */    
     generateTriangles() {
         // MP2: Implement the rest of this function!
+        var deltaX = (this.maxX - this.minX)/this.div
+        var deltaY = (this.maxY - this.minY)/this.div
 
+        //generate vertices
+        for (var i = 0; i <= this.div; i++) {
+            for (var j = 0; j <= this.div; j++) {
+                this.positionData.push(this.minX + deltaX*j);
+                this.positionData.push(this.minY + deltaY*i);
+                this.positionData.push(0);
+            }
+        }
+
+        //generate faces
+        for (var i = 0; i < this.div; i++) {
+            for (var j = 0; j < this.div; j++) {
+                var bl = (this.div + 1)*i + j;
+                var br = (this.div + 1)*i + j + 1;
+                var tl = (this.div + 1)*(i + 1) + j;
+                var tr = (this.div + 1)*(i + 1) + j + 1;
+
+                //T1
+                this.faceData.push(bl);
+                this.faceData.push(br);
+                this.faceData.push(tl);
+                
+                //T2
+                this.faceData.push(br);
+                this.faceData.push(tr);
+                this.faceData.push(tl);
+                
+            }
+        }
         // We'll need these to set up the WebGL buffers.
         this.numVertices = this.positionData.length/3;
         this.numFaces = this.faceData.length/3;
