@@ -37,7 +37,7 @@ var shininess = 100;
 
 // Light parameters
 /** @global Light position in world coordinates */
-var lightPosition = [3, 5, 0];
+var lightPosition = [6, 5, 3];
 /** @global Ambient light color/intensity for Phong reflection */
 var ambientLightColor = [0.1, 0.1, 0.1];
 /** @global Diffuse light color/intensity for Phong reflection */
@@ -75,11 +75,11 @@ function startup() {
 
   // Let the Terrain object set up its own buffers.
   var scale = 4;
-  myTerrain = new Terrain(128, -scale, scale, -scale, scale);
+  myTerrain = new Terrain(64, -scale, scale, -scale, scale);
   myTerrain.setupBuffers(shaderProgram);
 
-  // Set the background color to dark blue
-  gl.clearColor(13/255, 4/255, 40/255, 1.0);
+  // Set the background color to sunset color
+  gl.clearColor(252/255, 131/255, 153/255, 1.0);
   gl.enable(gl.DEPTH_TEST);
   requestAnimationFrame(animate);
 }
@@ -205,18 +205,18 @@ function draw() {
   // Generate the projection matrix using perspective projection.
   const near = 0.1;
   const far = 200.0;
-  glMatrix.mat4.perspective(projectionMatrix, degToRad(45), 
+  glMatrix.mat4.perspective(projectionMatrix, degToRad(25), 
                             gl.viewportWidth / gl.viewportHeight,
                             near, far);
   
   // Generate the view matrix using lookat.
   //CAMERA STUFF
   const lookAtPt = glMatrix.vec3.fromValues(0, 0, 0);
-  const eyePt = glMatrix.vec3.fromValues(-4, 0.5, 0);
+  const eyePt = glMatrix.vec3.fromValues(-5, myTerrain.maxY + 1, 0);
   const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0);
   glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
 
-  lightPosition[1] = myTerrain.maxY + 1;
+  lightPosition[1] = myTerrain.maxY + 3;
   setMatrixUniforms();
   setLightUniforms(ambientLightColor, diffuseLightColor, specularLightColor,
                    lightPosition);

@@ -83,24 +83,32 @@ vec3 inter_colors(float f, float start, float end, vec3 c1, vec3 c2);
 
 //pick color based on height
 vec3 colorer(float f) {
-    vec3 bottom = vec3(159, 126, 252)/255.0;
-    vec3 middle = vec3(21, 163, 137)/255.0;
-    vec3 top    = vec3(126, 252, 157)/255.0;
+    vec3 c0 = vec3(86,  191, 247)/255.0;  // lake blue
+    vec3 c1 = vec3(3,    76,   0)/255.0;  // grass green
+    vec3 c2 = vec3(100, 100, 100)/255.0;  // mountain grey
+    vec3 c3 = vec3(255, 255, 255)/255.0;  // snow white
     vec3 color;
-    if (f < 0.20) {
-        color = bottom;
+
+    if (f < 0.2) {
+        color = c0;
     }
-    else if (f < 0.45) {
-        color = inter_colors(f, 0.2, 0.45, bottom, middle);
+    else if (f < 0.25) {
+        color = inter_colors(f, 0.2, 0.25, c0, c1);
     }
-    else if (f < 0.6) {
-        color = middle;
+    else if (f < 0.4) {
+        color = c1;
     }
-    else if (f < 0.8) {
-        color = inter_colors(f, 0.6, 0.8, middle, top);
+    else if (f < 0.5) {
+        color = inter_colors(f, 0.4, 0.5, c1, c2);
+    }
+    else if (f < 0.75) {
+        color = c2;
+    }
+    else if (f < 0.85) {
+        color = inter_colors(f, 0.75, 0.85, c2, c3);
     }
     else {
-        color = top;
+        color = c3;
     }
     return color;
 }

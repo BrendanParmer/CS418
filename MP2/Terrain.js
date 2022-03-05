@@ -41,7 +41,7 @@
         this.generateLines();
         console.log("Terrain: Generated lines");
 
-        this.shapeTerrain(5000);
+        this.shapeTerrain(1000);
         console.log("Terrain: Sculpted terrain");
 
         this.calculateNormals();
@@ -133,16 +133,18 @@
      * @param {number} iterations how many faults to make
      */
     shapeTerrain(iterations) {
-        var dy = 0.02;
+        var dy = 0.05;
+        var R = 4;
         for (var i = 0; i < iterations; i++) {
             var h = (i+1)/iterations;
-            dy = dy/2**h;
+            dy = dy/1.5**h;
             var p = glMatrix.vec3.fromValues(this.randFloat(this.minX, this.maxX), 
                                              0,
                                              this.randFloat(this.minZ, this.maxZ));
             var n = glMatrix.vec2.create();
             glMatrix.vec2.random(n);
             var n3 = glMatrix.vec3.fromValues(n[0], 0, n[1]);
+            glMatrix.vec3.normalize(n3, n3);
 
             for (var j = 0; j < this.numVertices; j++) {
                 var b = [0,0,0];
@@ -150,11 +152,19 @@
                 var sub = glMatrix.vec3.create();
                 glMatrix.vec3.subtract(sub, b, p);
                 var dot = glMatrix.vec3.dot(sub, n3);
+                var r = Math.abs(dot);
+                var g;
+                if (r < R) {
+                    g = (1 - (r/R)**2)**2;
+                }
+                else {
+                    g = 0;
+                }
                 if (dot > 0) {
-                    b[1] += dy;
+                    b[1] += dy * g;
                 }
                 else if (dot < 0) {
-                    b[1] -= dy;
+                    b[1] -= dy * g;
                 }
                 this.setVertex(b, j);
             }
@@ -219,7 +229,9 @@
             }
         }
     }
-
+    /**
+     * Iterates over each vertex and finds and sets the max and min Y (vertical) coordinates
+     */
     findHeights() {
         for (var i = 0; i < this.numVertices; i++) {
             var y = this.positionData[i*3 + 1];
