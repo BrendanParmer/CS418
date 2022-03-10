@@ -1,0 +1,167 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>MP3: Simulating Flight</title>
+<meta charset="utf-8" name = "MP3: Simulating Flight" content="Listen to Cookbook Homicide on Spotify"> 
+<link rel="stylesheet" type="text/css" href="mp3.css">
+<!-- Firefox would not shut up about not having a favicon-->
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+
+<!-- If you add additional .js files, be sure to add them here. -->
+<script src="gl-matrix-min.js"></script>
+<script src="Terrain.js"></script>
+<script src="MP3.js"></script>
+
+
+<script id="shader-vs" type="x-shader/x-vertex">#version 300 es
+// Vertex Shader
+// Implements Gourand shading. See the lecture on "Basic Shading" for details.
+
+// Use high-precision floats if available on this device.
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+
+in vec3 vertexPosition;
+in vec3 vertexNormal;
+
+uniform vec3 lightPosition;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat3 normalMatrix;
+
+out vec3 vPos;
+out vec3 vertexPositionView;
+out vec3 lightView;
+
+
+void main(void) {
+    // Transform the vertex position and normal to view coordinates
+    vertexPositionView =(modelViewMatrix * vec4(vertexPosition, 1.0)).xyz;
+    lightView = (modelViewMatrix * vec4(lightPosition, 1.0)).xyz;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPosition, 1.0);
+    vPos = vertexPosition;
+}
+</script>
+
+<script id="shader-fs" type="x-shader/x-fragment">#version 300 es
+// Fragment Shader
+// Implements Gourand shading. See the lecture on "Basic Shading" for details.
+
+// Use high-precision floats if available on this device.
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+
+uniform vec3 kSpecular;
+uniform float shininess;
+
+uniform float minY;
+uniform float maxY;
+
+uniform vec3 ambientLightColor;
+uniform vec3 diffuseLightColor;
+uniform vec3 specularLightColor;
+
+in vec3 vPos;
+in vec3 vertexPositionView;
+in vec3 lightView;
+
+
+out vec4 fragmentColor;
+
+vec3 colorer(float f);
+vec3 inter_colors(float f, float start, float end, vec3 c1, vec3 c2);
+
+//pick color based on height
+vec3 colorer(float f) {
+    vec3 c0 = vec3(86,  191, 247)/255.0;  // lake blue
+    vec3 c1 = vec3(3,    76,   0)/255.0;  // grass green
+    vec3 c2 = vec3(100, 100, 100)/255.0;  // mountain grey
+    vec3 c3 = vec3(255, 255, 255)/255.0;  // snow white
+    vec3 color;
+
+    if (f < 0.2) {
+        color = c0;
+    }
+    else if (f < 0.25) {
+        color = inter_colors(f, 0.2, 0.25, c0, c1);
+    }
+    else if (f < 0.4) {
+        color = c1;
+    }
+    else if (f < 0.5) {
+        color = inter_colors(f, 0.4, 0.5, c1, c2);
+    }
+    else if (f < 0.75) {
+        color = c2;
+    }
+    else if (f < 0.85) {
+        color = inter_colors(f, 0.75, 0.85, c2, c3);
+    }
+    else {
+        color = c3;
+    }
+    return color;
+}
+
+//linearly interpolate between colors
+vec3 inter_colors(float f, float start, float end, vec3 c1, vec3 c2) {
+    float normed = (f-start)/(end-start);
+    return c1 + (c2 - c1) * normed;
+}
+
+void main(void) {
+    vec3 vertexNormalView = normalize(vertexPositionView);
+
+    float normHeight = (vPos.y - minY)/(maxY - minY);
+    vec3 kAmbient = colorer(normHeight);
+    vec3 kDiffuse = colorer(normHeight);
+
+    // The camera is at the origin in view coordinates
+    vec3 cameraPositionView = vec3(0.0, 0.0, 0.0);
+
+    // Calculate the three other vectors we need: l, r, and v
+    vec3 lightVector = normalize(lightView - vertexPositionView);
+    vec3 reflectionVector = normalize(reflect(-lightVector, vertexNormalView));
+    vec3 viewVector = normalize(cameraPositionView - vertexPositionView);
+
+    // Calculate diffuse light weighting: (n dot l)
+    float diffuseWeight = max(dot(vertexNormalView, lightVector), 0.0);
+    
+    // Calculate the specular light weighting: (r dot v)^(shininess)
+    float rDotV = max(dot(reflectionVector, viewVector), 0.0);
+    float specularWeight = pow(rDotV, shininess);
+
+    // Sum up all three lighting components into the color for the vertex,
+    // and send it to the fragment shader.
+    fragmentColor = vec4((  kAmbient * ambientLightColor
+                        + kDiffuse * diffuseLightColor * diffuseWeight
+                        + kSpecular * specularLightColor * specularWeight), 1.0);
+}
+</script>
+
+
+<body onload="startup();">
+    <canvas id="glCanvas" width="1200" height="600"></canvas>
+
+    <form id="input_form">
+        <fieldset>
+            <legend>Rendering Options</legend>
+            <div>
+                <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
+                <input type="radio" name="primitive" id="polygon" value="polygon" checked> Polygon
+                <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges
+            </div>
+        </fieldset>
+    </form>
+</body>
+
+</html>
