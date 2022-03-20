@@ -64,6 +64,9 @@ var camSpeed = 0.5;
 /** @global Initial view direction */
 var camInitialDir = glMatrix.vec3.fromValues(5, -1, 0);
 
+/** @global Time of previous frame */
+var prev_time = 0;
+
 /**
  * Translates degrees to radians
  * @param {Number} degrees Degree input to function
@@ -109,24 +112,25 @@ function startup() {
 function keypress(e) {
   console.log(e.key);
 
+  var d = 0.25;
   var eulerX = 0;
   var eulerY = 0;
   var eulerZ = 0;
 
   // pitch
   if (e.key === "ArrowLeft" || e.key === "a") {
-    eulerX -= 1;
+    eulerX -= d;
   }
   else if (e.key === "ArrowRight" || e.key === "d") {
-    eulerX += 1;
+    eulerX += d;
   }
 
   // roll
   else if (e.key === "ArrowUp" || e.key === "w") {
-    eulerZ += 1;
+    eulerZ += d;
   }
   else if (e.key === "ArrowDown" || e.key === "s") {
-    eulerZ -= 1;
+    eulerZ -= d;
   }
   //speed
   else if (e.key === "+" || e.key === "=") {
@@ -150,8 +154,8 @@ function keypress(e) {
  * Resets the camera to default position and orientation
  */
 function resetCam() {
-  camPosition = camPosDefault;
-  camOrientation = camOrientationDefault;
+  camPosition = glMatrix.vec3.clone(camPosDefault);
+  camOrientation = glMatrix.quat.clone(camOrientationDefault);
   glMatrix.vec3.normalize(camInitialDir, camInitialDir);
 }
 
@@ -270,6 +274,7 @@ function draw() {
   // Clear the color buffer and the depth buffer.
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+
   // Generate the projection matrix using perspective projection.
   const near = 0.1;
   const far = 200.0;
@@ -371,8 +376,18 @@ function setHeightUniforms(min, max) {
  * wireframe, polygon, or both.
  */
  function animate(currentTime) {
+  var dPos = glMatrix.vec3.create();
+  var forward = glMatrix.vec3.create();
+  glMatrix.vec3.transformQuat(forward, camInitialDir, camOrientation);
+  glMatrix.vec3.normalize(forward, forward);
+
+  var scale = camSpeed * (currentTime - prev_time) * 0.0005;
+  glMatrix.vec3.scale(dPos, forward, scale);
+  glMatrix.vec3.add(camPosition, camPosition, dPos);
+
   // Draw the frame.
   draw();
+  prev_time = currentTime;
   // Animate the next frame. 
   requestAnimationFrame(animate);
 }
