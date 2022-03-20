@@ -26,10 +26,6 @@ var projectionMatrix = glMatrix.mat4.create();
 var normalMatrix = glMatrix.mat3.create();
 
 // Material parameters
-/** @global Ambient material color/intensity for Phong reflection */
-//var kAmbient = [227/255, 191/255, 76/255];
-/** @global Diffuse material color/intensity for Phong reflection */
-//var kDiffuse = [227/255, 191/255, 255/255];
 /** @global Specular material color/intensity for Phong reflection */
 var kSpecular = [227/255, 227/255, 227/255];
 /** @global Shininess exponent for Phong reflection */

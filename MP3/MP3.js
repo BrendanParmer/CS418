@@ -92,15 +92,15 @@ function startup() {
 
   document.addEventListener("keydown", keypress);
   // Let the Terrain object set up its own buffers.
-  var scale = 4;
+  var scale = 5;
   myTerrain = new Terrain(64, -scale, scale, -scale, scale);
   myTerrain.setupBuffers(shaderProgram);
 
-  camPosDefault = glMatrix.vec3.fromValues(-5, myTerrain.maxY + 1.0, 0.0);
+  camPosDefault = glMatrix.vec3.fromValues(-scale, myTerrain.maxY + 1.0, 0.0);
   resetCam();
 
   // Set the background color to sunset color
-  gl.clearColor(252/255, 131/255, 153/255, 1.0);
+  gl.clearColor(100/255, 131/255, 153/255, 1.0);
   gl.enable(gl.DEPTH_TEST);
   requestAnimationFrame(animate);
 }
@@ -249,6 +249,10 @@ function setupShaders() {
     gl.getUniformLocation(shaderProgram, "kSpecular");
   shaderProgram.locations.shininess =
     gl.getUniformLocation(shaderProgram, "shininess");
+  shaderProgram.locations.fogColor =
+    gl.getUniformLocation(shaderProgram, "fogColor");
+  shaderProgram.locations.fogDensity = 
+    gl.getUniformLocation(shaderProgram, "fogDensity");
   
   shaderProgram.locations.lightPosition =
     gl.getUniformLocation(shaderProgram, "lightPosition");
@@ -316,6 +320,14 @@ function draw() {
     setMaterialUniforms(kEdgeBlack, shininess);
     myTerrain.drawEdges();
   }
+  //set fog uniforms
+  var fogColor = glMatrix.vec4.fromValues(0.3, 0.3, 0.3, 0.5);
+  var fogDensity = 0.15;
+  if (!document.getElementById("fog").checked) {
+    fogDensity = 0.0;
+  }
+  gl.uniform4fv(shaderProgram.locations.fogColor, fogColor);
+  gl.uniform1f(shaderProgram.locations.fogDensity, fogDensity);
 }
 
 /**

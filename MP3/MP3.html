@@ -69,6 +69,9 @@ uniform vec3 ambientLightColor;
 uniform vec3 diffuseLightColor;
 uniform vec3 specularLightColor;
 
+uniform vec4 fogColor;
+uniform float fogDensity;
+
 in vec3 vPos;
 in vec3 vertexPositionView;
 in vec3 lightView;
@@ -118,6 +121,7 @@ vec3 inter_colors(float f, float start, float end, vec3 c1, vec3 c2) {
 }
 
 void main(void) {
+    #define LOG2 1.442695
     vec3 vertexNormalView = normalize(vertexPositionView);
 
     float normHeight = (vPos.y - minY)/(maxY - minY);
@@ -141,9 +145,14 @@ void main(void) {
 
     // Sum up all three lighting components into the color for the vertex,
     // and send it to the fragment shader.
-    fragmentColor = vec4((  kAmbient * ambientLightColor
+    vec4 color = vec4((  kAmbient * ambientLightColor
                         + kDiffuse * diffuseLightColor * diffuseWeight
                         + kSpecular * specularLightColor * specularWeight), 1.0);
+
+    float fogDistance = length(vertexPositionView);
+    float fogAmount = 1.0 - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
+    fogAmount = clamp(fogAmount, 0.0, 1.0);
+    fragmentColor = mix(color, fogColor, fogAmount);
 }
 </script>
 
@@ -159,6 +168,10 @@ void main(void) {
                     <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
                     <input type="radio" name="primitive" id="polygon" value="polygon" checked> Polygon
                     <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges
+                </div>
+                <div>
+                    <input type="checkbox" id="fog" name="fog" checked>
+                    <label for="fog">Enable Fog</label>
                 </div>
             </fieldset>
         </form>

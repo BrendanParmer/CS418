@@ -41,7 +41,7 @@
         this.generateLines();
         console.log("Terrain: Generated lines");
 
-        this.shapeTerrain(1000);
+        this.shapeTerrain(div * 16);
         console.log("Terrain: Sculpted terrain");
 
         this.calculateNormals();
