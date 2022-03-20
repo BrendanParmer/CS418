@@ -1,7 +1,7 @@
 /**
- * @file MP2.js - A simple WebGL rendering engine
+ * @file MP3.js - A simple WebGL rendering engine
  * @author Brendan Parmer <bparmer2@illinois.edu>
- * @brief Rendering code for MP2 - Terrain
+ * @brief Rendering code for MP3 - simulating flight
  * 
  * Updated Spring 2021 for WebGL 2.0/GLSL 3.00 ES.
  */
@@ -26,10 +26,6 @@ var projectionMatrix = glMatrix.mat4.create();
 var normalMatrix = glMatrix.mat3.create();
 
 // Material parameters
-/** @global Ambient material color/intensity for Phong reflection */
-//var kAmbient = [227/255, 191/255, 76/255];
-/** @global Diffuse material color/intensity for Phong reflection */
-//var kDiffuse = [227/255, 191/255, 255/255];
 /** @global Specular material color/intensity for Phong reflection */
 var kSpecular = [227/255, 227/255, 227/255];
 /** @global Shininess exponent for Phong reflection */
@@ -54,7 +50,7 @@ var kEdgeWhite = [0.7, 0.7, 0.7];
 var camPosition = glMatrix.vec3.create();
 
 /** @global Default camera position */
-var camPosDefault = glMatrix.vec3.fromValues(0.0, 10.0, 0.0);
+var camPosDefault = glMatrix.vec3.fromValues(-5, 1, 0);
 
 /** @global Orientation of the camera */
 var camOrientation = glMatrix.quat.create();
@@ -66,7 +62,7 @@ var camOrientationDefault = glMatrix.quat.create();
 var camSpeed = 0.5;
 
 /** @global Initial view direction */
-var camInitialDir = glMatrix.vec3.create();
+var camInitialDir = glMatrix.vec3.fromValues(5, -1, 0);
 
 /**
  * Translates degrees to radians
@@ -97,6 +93,9 @@ function startup() {
   myTerrain = new Terrain(64, -scale, scale, -scale, scale);
   myTerrain.setupBuffers(shaderProgram);
 
+  camPosDefault = glMatrix.vec3.fromValues(-5, myTerrain.maxY + 1.0, 0.0);
+  resetCam();
+
   // Set the background color to sunset color
   gl.clearColor(252/255, 131/255, 153/255, 1.0);
   gl.enable(gl.DEPTH_TEST);
@@ -109,22 +108,26 @@ function startup() {
  */
 function keypress(e) {
   console.log(e.key);
-  // roll
-  if (e.key === "ArrowLeft" || e.key === "KeyA") {
-    update_orientation(true, false);
-  }
-  else if (e.key === "ArrowRight" || e.key === "KeyD") {
-    update_orientation(true, true);
-  }
+
+  var eulerX = 0;
+  var eulerY = 0;
+  var eulerZ = 0;
 
   // pitch
-  else if (e.key === "ArrowUp" || e.key === "KeyW") {
-    update_orientation(false, true);
+  if (e.key === "ArrowLeft" || e.key === "a") {
+    eulerX -= 1;
   }
-  else if (e.key === "ArrowDown" || e.key === "KeyS") {
-    update_orientation(false, false);
+  else if (e.key === "ArrowRight" || e.key === "d") {
+    eulerX += 1;
   }
 
+  // roll
+  else if (e.key === "ArrowUp" || e.key === "w") {
+    eulerZ += 1;
+  }
+  else if (e.key === "ArrowDown" || e.key === "s") {
+    eulerZ -= 1;
+  }
   //speed
   else if (e.key === "+" || e.key === "=") {
     camSpeed += 0.01;
@@ -137,32 +140,21 @@ function keypress(e) {
   else if (e.key === "Escape") {
     resetCam();
   }
+  var dOrientation = glMatrix.quat.create();
+  glMatrix.quat.fromEuler(dOrientation, eulerX, eulerY, eulerZ);
+  glMatrix.quat.multiply(camOrientation, camOrientation, dOrientation);
 }
+
 
 /**
- * Update camera's orientation
+ * Resets the camera to default position and orientation
  */
-function update_orientation(isRoll, isPositive) {
-  var angle;
-  if (isPositive) {
-    angle = Math.PI/16;
-  }
-  else {
-    angle = -Math.PI/16;
-  }
-
-  if (isRoll) {
-    glMatrix.quat.rotateZ(camOrientation, camOrientation, angle);
-  }
-  else {
-    glMatrix.quat.rotateX(camOrientation, camOrientation, angle);
-  }
-}
-
 function resetCam() {
   camPosition = camPosDefault;
   camOrientation = camOrientationDefault;
+  glMatrix.vec3.normalize(camInitialDir, camInitialDir);
 }
+
 /**
  * Creates a WebGL 2.0 context.
  * @param {element} canvas The HTML5 canvas to attach the context to.
@@ -179,7 +171,6 @@ function createGLContext(canvas) {
   }
   return context;
 }
-
 
 /**
  * Loads a shader from the HTML document and compiles it.
@@ -213,7 +204,6 @@ function loadShaderFromDOM(id) {
   } 
   return shader; 
 }
-
 
 /**
  * Sets up the vertex and fragment shaders.
@@ -289,10 +279,13 @@ function draw() {
   
   // Generate the view matrix using lookat.
   //CAMERA STUFF
-  const lookAtPt = glMatrix.vec3.fromValues(0, 0, 0);
-  const eyePt = camPosition;
   const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0);
-  glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
+  glMatrix.vec3.transformQuat(up, up, camOrientation);
+  var dir = glMatrix.vec3.create();
+  var lookAtPt = glMatrix.vec3.create();
+  glMatrix.vec3.transformQuat(dir, camInitialDir, camOrientation);
+  glMatrix.vec3.add(lookAtPt, camPosition, dir);
+  glMatrix.mat4.lookAt(modelViewMatrix, camPosition, lookAtPt, up);
 
   lightPosition[1] = myTerrain.maxY + 3;
   setMatrixUniforms();
@@ -320,7 +313,6 @@ function draw() {
   }
 }
 
-
 /**
  * Sends the three matrix uniforms to the shader program.
  */
@@ -332,14 +324,13 @@ function setMatrixUniforms() {
 
   // We want to transform the normals by the inverse-transpose of the
   // Model/View matrix
-  glMatrix.mat3.fromMat4(normalMatrix,modelViewMatrix);
-  glMatrix.mat3.transpose(normalMatrix,normalMatrix);
-  glMatrix.mat3.invert(normalMatrix,normalMatrix);
+  glMatrix.mat3.fromMat4(normalMatrix, modelViewMatrix);
+  glMatrix.mat3.transpose(normalMatrix, normalMatrix);
+  glMatrix.mat3.invert(normalMatrix, normalMatrix);
 
   gl.uniformMatrix3fv(shaderProgram.locations.normalMatrix, false,
                       normalMatrix);
 }
-
 
 /**
  * Sends material properties to the shader program.
@@ -347,10 +338,9 @@ function setMatrixUniforms() {
  * @param {Float32} alpha shininess coefficient
  */
 function setMaterialUniforms(s, alpha) {
-  gl.uniform3fv(shaderProgram.locations.kSpecular, s);
+  gl.uniform3fv(shaderProgram.locations.kSpecular,    s);
   gl.uniform1f(shaderProgram.locations.shininess, alpha);
 }
-
 
 /**
  * Sends light information to the shader program.
@@ -360,15 +350,16 @@ function setMaterialUniforms(s, alpha) {
  * @param {Float32Array} loc The light position, in view coordinates.
  */
 function setLightUniforms(a, d, s, loc) {
-  gl.uniform3fv(shaderProgram.locations.ambientLightColor, a);
-  gl.uniform3fv(shaderProgram.locations.diffuseLightColor, d);
+  gl.uniform3fv(shaderProgram.locations.ambientLightColor,  a);
+  gl.uniform3fv(shaderProgram.locations.diffuseLightColor,  d);
   gl.uniform3fv(shaderProgram.locations.specularLightColor, s);
-  gl.uniform3fv(shaderProgram.locations.lightPosition, loc);
+  gl.uniform3fv(shaderProgram.locations.lightPosition,    loc);
 }
 
 /**
- * 
- * 
+ * Sends height info to the fragment shader
+ * @param min the min height of the terrain
+ * @param max the max height of the terrain
  */
 function setHeightUniforms(min, max) {
   gl.uniform1f(shaderProgram.locations.minY, min);
@@ -377,7 +368,7 @@ function setHeightUniforms(min, max) {
 
 /**
  * Animates...allows user to change the geometry view between
- * wireframe, polgon, or both.
+ * wireframe, polygon, or both.
  */
  function animate(currentTime) {
   // Draw the frame.
