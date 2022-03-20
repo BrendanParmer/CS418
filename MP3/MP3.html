@@ -148,19 +148,34 @@ void main(void) {
 </script>
 
 
-<body onload="startup();">
-    <canvas id="glCanvas" width="1200" height="600"></canvas>
+<body onload="startup();" class = "flex">
 
-    <form id="input_form">
+    <canvas id="glCanvas" width="1000" height="600"></canvas>
+    <div>
+        <form id="input_form">
+            <fieldset>
+                <legend>Rendering Options</legend>
+                <div>
+                    <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
+                    <input type="radio" name="primitive" id="polygon" value="polygon" checked> Polygon
+                    <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges
+                </div>
+            </fieldset>
+        </form>
+        <br>
         <fieldset>
-            <legend>Rendering Options</legend>
-            <div>
-                <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
-                <input type="radio" name="primitive" id="polygon" value="polygon" checked> Polygon
-                <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges
-            </div>
+            <legend>Flight Controls:</legend>
+            <ul>
+                <li><b>Roll left:</b> A or Left Arrow Key</li>
+                <li><b>Roll right:</b> D or Right Arrow Key</li>
+                <li><b>Pitch up:</b> W or Up Arrow Key</li>
+                <li><b>Pitch down:</b> S or Down Arrow Key</li>
+                <li><b>Speed up:</b> + Key</li>
+                <li><b>Slow down:</b> - Key</li>
+                <li><b>Reset View:</b> Escape Key</li>
+            </ul>
         </fieldset>
-    </form>
+    </div>
 </body>
 
 </html>
