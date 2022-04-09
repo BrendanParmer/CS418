@@ -54,8 +54,8 @@ class TriMesh{
     
     /**
     * Return an axis-aligned bounding box
-    * @param {Object} an array object of length 3 to fill win min XYZ coords
-    * @param {Object} an array object of length 3 to fill win max XYZ coords
+    * @param {Object} minXYZ an array object of length 3 to fill win min XYZ coords
+    * @param {Object} maxXYZ an array object of length 3 to fill win max XYZ coords
     */
     getAABB(minXYZ,maxXYZ){
        for(var j=0;j<3;j++){    
@@ -101,6 +101,32 @@ class TriMesh{
     loadFromOBJ(fileText)
     {    
         //Your code here
+        var lines = fileText.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.slice(0, 2) === "v ") {
+                var array = line.split(/\b\s+(?!$)/);
+                var x = parseFloat(array[1]);
+                var y = parseFloat(array[2]);
+                var z = parseFloat(array[3]);
+                this.vBuffer.push(x);
+                this.vBuffer.push(y);
+                this.vBuffer.push(z);
+            }
+            else if (line.slice(0, 2) === "f ") {
+                var array = line.split(/\b\s+(?!$)/);
+                var v0 = parseInt(array[1]) - 1;
+                var v1 = parseInt(array[2]) - 1;
+                var v2 = parseInt(array[3]) - 1;
+                this.fBuffer.push(v0);
+                this.fBuffer.push(v1);
+                this.fBuffer.push(v2);
+            }
+            else if (line[0] === '#')
+                continue;
+            else
+                console.log("ERROR: weird line detected\n\t" + line);
+        }
         
         this.numVertices = this.vBuffer.length / 3;
         this.numFaces = this.fBuffer.length / 3;  
@@ -334,18 +360,35 @@ class TriMesh{
     }
     
     /**
-    * Genrate a transormationmatrix this.modelMatrix=ST 
+    * Genrate a transformation matrix this.modelMatrix=ST 
     * T translates so that the AABB is at the origin
     * S scales uniformly by 1/L where L is the longest side of the AABB
     */    
     
     canonicalTransform(){
-      //Your code here
-     
+      //translation
+      var xt = -(this.minXYZ[0] + this.maxXYZ[0])/2;
+      var yt = -(this.minXYZ[1] + this.maxXYZ[1])/2;
+      var zt = -(this.minXYZ[2] + this.maxXYZ[2])/2;
+      var t_vec = glMatrix.vec3.fromValues(xt, yt, zt);
+      var T = glMatrix.mat4.create();
+      glMatrix.mat4.fromTranslation(T, t_vec);
+
+      //scale
+      var xs = this.maxXYZ[0] - this.minXYZ[0];
+      var ys = this.maxXYZ[1] - this.minXYZ[1];
+      var zs = this.maxXYZ[2] - this.minXYZ[2];
+
+      var s = 1/Math.max(xs, ys, zs);
+      var s_vec = glMatrix.vec3.fromValues(s, s, s);
+      var S = glMatrix.mat4.create();
+      glMatrix.mat4.fromScaling(S, s_vec);
+
+      glMatrix.mat4.multiply(this.modelMatrix, S, T);
     }
     
     /**
-    * Return the model transofrmation that place mesh at origin in 1x1x1 box
+    * Return the model transformation that place mesh at origin in 1x1x1 box
     */    
     getModelTransform(){
         return this.modelMatrix;

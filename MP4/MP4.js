@@ -95,7 +95,7 @@ function startup() {
                             near, far);
 
   // Set the background color to sky blue (you can change this if you like).
-  gl.clearColor(0.82, 0.93, 0.99, 1.0);
+  gl.clearColor(0.2, 0.2, 0.2, 1.0);
 
   gl.enable(gl.DEPTH_TEST);
   requestAnimationFrame(animate);
