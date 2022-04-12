@@ -125,7 +125,7 @@ class TriMesh{
             else if (line[0] === '#')
                 continue;
             else
-                console.log("ERROR: weird line detected\n\t" + line);
+                console.log("Weird line detected\n\t" + line);
         }
         
         this.numVertices = this.vBuffer.length / 3;

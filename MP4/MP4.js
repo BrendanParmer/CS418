@@ -61,6 +61,29 @@ var kEdgeBlack = [0.0, 0.0, 0.0];
 /** @global Edge color for white wireframe */
 var kEdgeWhite = [0.7, 0.7, 0.7];
 
+/** @global texture for Utah Teapot */
+var texture;
+
+/**
+ * load texture from image
+ * @param {string} filename 
+ */
+function loadTexture(filename) {
+  texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  //make magenta while loading
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 255]));
+
+  //asynchronously load the texture
+  var image = new Image();
+  image.src = filename;
+  image.addEventListener("load", function() {
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    });
+}
 /**
  * Translates degrees to radians
  * @param {Number} degrees Degree input to function
@@ -82,6 +105,12 @@ function startup() {
 
   // Compile and link the shader program.
   setupShaders();
+
+  //load the texture boi
+  loadTexture("brick.jpg");
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.uniform1i(shaderProgram.locations.uSampler, 0);
 
   // Let the mesh object set up its own buffers.
   myMesh = new TriMesh();
@@ -204,9 +233,12 @@ function setupShaders() {
   shaderProgram.locations.ambientLightColor =
     gl.getUniformLocation(shaderProgram, "ambientLightColor");
   shaderProgram.locations.diffuseLightColor =
-  gl.getUniformLocation(shaderProgram, "diffuseLightColor");
+    gl.getUniformLocation(shaderProgram, "diffuseLightColor");
   shaderProgram.locations.specularLightColor =
-  gl.getUniformLocation(shaderProgram, "specularLightColor");
+    gl.getUniformLocation(shaderProgram, "specularLightColor");
+
+  shaderProgram.locations.uSampler =
+    gl.getUniformLocation(shaderProgram, "u_texture");
 }
 
 /**
