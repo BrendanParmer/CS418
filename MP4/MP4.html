@@ -4,6 +4,7 @@
 <title>MP4: Texture Mapping</title>
 <meta charset="utf-8"> 
 <link rel="stylesheet" type="text/css" href="MP4.css">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 
 <!-- If you add additional .js files, be sure to add them here. -->
@@ -42,7 +43,9 @@ void main(void) {
 
     
     gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPosition, 1.0);
-    v_texcoord = vertexPosition.xy;
+    float x_scale = 1.0/3.0;
+    float y_scale = 1.0/2.0;
+    v_texcoord = vec2(x_scale*vertexPosition.x + 0.5, -y_scale*vertexPosition.y + 1.2);
 }
 </script>
 

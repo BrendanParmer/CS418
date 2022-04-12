@@ -30,13 +30,13 @@ var normalMatrix = glMatrix.mat3.create();
 
 // Material parameters
 /** @global Ambient material color/intensity for Phong reflection */
-var kAmbient = [227/255, 191/255, 76/255];
+var kAmbient = [0.1, 0.1, 0.1];
 /** @global Diffuse material color/intensity for Phong reflection */
-var kDiffuse = [227/255, 191/255, 76/255];
+var kDiffuse = [0.5, 0.5, 0.5];
 /** @global Specular material color/intensity for Phong reflection */
-var kSpecular = [227/255, 191/255, 76/255];
+var kSpecular = [.5,.5,.5];
 /** @global Shininess exponent for Phong reflection */
-var shininess = 2;
+var shininess = 10;
 
 // Light parameters
 /** @global Light position in VIEW coordinates */
@@ -61,8 +61,16 @@ var kEdgeBlack = [0.0, 0.0, 0.0];
 /** @global Edge color for white wireframe */
 var kEdgeWhite = [0.7, 0.7, 0.7];
 
-/** @global texture for Utah Teapot */
+/** @global texture for teapot */
 var texture;
+
+/** @global is a mouse button pressed */
+var isDown = false;
+/** @global mouse coords */
+var mouse_x = -1;
+/** @global rotation about the y (deg) */
+var rot_y = 0;
+
 
 /**
  * load texture from image
@@ -81,6 +89,8 @@ function loadTexture(filename) {
   image.addEventListener("load", function() {
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.generateMipmap(gl.TEXTURE_2D);
     });
 }
@@ -107,7 +117,7 @@ function startup() {
   setupShaders();
 
   //load the texture boi
-  loadTexture("brick.jpg");
+  loadTexture("texture.jpg");
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.uniform1i(shaderProgram.locations.uSampler, 0);
@@ -116,6 +126,23 @@ function startup() {
   myMesh = new TriMesh();
   myMesh.readFile("teapot.obj");
   
+  //add mouse listeners
+  document.addEventListener("mousedown", e => {
+    x = e.offsetX;
+    isDown = true;
+  });
+  document.addEventListener("mouseup", e => {
+    isDown = false;
+  })
+  document.addEventListener("mousemove", e => {
+    if (isDown) {
+      rot_y += e.offsetX - x;
+      x = e.offsetX;
+    }
+  })
+
+
+
   // Generate the projection matrix using perspective projection.
   const near = 0.1;
   const far = 200.0;
@@ -124,7 +151,7 @@ function startup() {
                             near, far);
 
   // Set the background color to sky blue (you can change this if you like).
-  gl.clearColor(0.2, 0.2, 0.2, 1.0);
+  gl.clearColor(0.2, 0.2, 0.23, 1.0);
 
   gl.enable(gl.DEPTH_TEST);
   requestAnimationFrame(animate);
@@ -252,8 +279,9 @@ function draw() {
   
   // Generate the view matrix using lookat.
   glMatrix.mat4.identity(modelViewMatrix);
+  glMatrix.mat4.rotateY(modelViewMatrix, myMesh.getModelTransform(), degToRad(rot_y));
   glMatrix.mat4.lookAt(viewMatrix, eyePt, lookAtPt, up);
-  glMatrix.mat4.multiply(modelViewMatrix,  viewMatrix,myMesh.getModelTransform());
+  glMatrix.mat4.multiply(modelViewMatrix,  viewMatrix, modelViewMatrix);
     
       
   setMatrixUniforms();
