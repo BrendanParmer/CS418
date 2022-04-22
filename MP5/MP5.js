@@ -45,6 +45,39 @@ const lDiffuse = [1.0, 1.0, 1.0];
 /** @global Specular  light color */
 const lSpecular = [1.0, 1.0, 1.0];
 
+/** @global Gravity (m/s^2) */
+const g = glMatrix.fromValues(0, -9.81, 0);
+/** @global drag factor */
+const d = 0.1;
+
+class Particle {
+  constructor(pos_0, v_0, m, r, color) {
+    this.pos    = pos_0;
+    this.v      = v_0;
+    this.m      = m;
+    this.moving = true; 
+
+    this.r     = r;
+    this.color = color;
+  }
+
+  /**
+   * Computes new position and velocity for the particle
+   * @param {float} dt - time elapsed since last frame
+   */
+  physics(dt) {
+    var a = g;
+    /*
+    this.v = update based on g and drag
+    */
+    /*
+    this.p = update based on v
+    */
+  }
+}
+
+/** @global list of all particles in scene */
+var particles = [];
 
 /**
  * Translates degrees to radians
@@ -80,7 +113,7 @@ function startup() {
                             near, far);
     
   // Set the background color to black (you can change this if you like).    
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearColor(0.1, 0.1, 0.1, 1.0);
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
 
