@@ -87,7 +87,7 @@ class Particle {
       glMatrix.vec3.scale(dx, this.v, dt);
       glMatrix.vec3.add(this.pos, this.pos, dx);
       //particle on floor
-      if (Math.abs(this.pos[1] + m) < 0.01 * m) {
+      if ((this.pos[1] + m) < 0.01) {
         if (glMatrix.vec3.distance(this.pos, old_p) < stop_dist) {
           console.log("Stop moving");
           console.log(this.pos);
@@ -213,20 +213,20 @@ function startup() {
 
 /** generate a random particle */
 function makeParticle() {
-  var x = 0.9*m*(2*Math.random() - 1);
-  var y = 0.9*m*(2*Math.random() - 1);
-  var z = 0.9*m*(2*Math.random() - 1);
+  //var radius = 0.6;
+  var radius = 0.2*m*Math.random() + 0.1;
+  var mass = radius;
+
+  var x = 0.99*(m-radius)*(2*Math.random() - 1);
+  var y = 0.99*(m-radius)*(2*Math.random() - 1);
+  var z = 0.99*(m-radius)*(2*Math.random() - 1);
   var pos = glMatrix.vec3.fromValues(x, y, z);
 
-  var vf = 0.1;
+  var vf = 10;
   var vx = m*vf*(2*Math.random() - 1);
   var vy = m*vf*(2*Math.random() - 1);
   var vz = m*vf*(2*Math.random() - 1);
   var v  = glMatrix.vec3.fromValues(vx, vy, vz);
-
-  //var radius = 0.6;
-  var radius = 0.2*m*Math.random() + 0.1;
-  var mass = radius;
 
   var r = Math.random();
   var g = Math.random();
@@ -355,7 +355,7 @@ function animate(currentTime) {
   // Add code here using currentTime if you want to add animations
   var dt;
   if (t != -1) 
-    dt = (currentTime - t)/1000;
+    dt = (currentTime - t)/5000;
   else
     dt = 0;
   var drag = d**dt;
