@@ -48,7 +48,11 @@ const lSpecular = [1.0, 1.0, 1.0];
 /** @global Gravity (m/s^2) */
 const g = glMatrix.fromValues(0, -9.81, 0);
 /** @global drag factor */
-const d = 0.1;
+const d = 0.95;
+/** @global Box size */
+const m = 10.0;
+/** @global Stop dist */
+const stop_dist = 0.01;
 
 class Particle {
   constructor(pos_0, v_0, m, r, color) {
@@ -66,13 +70,19 @@ class Particle {
    * @param {float} dt - time elapsed since last frame
    */
   physics(dt) {
-    var a = g;
-    /*
-    this.v = update based on g and drag
-    */
-    /*
-    this.p = update based on v
-    */
+    if (this.moving) {
+      var a = g;
+      var old_v = this.v;
+      this.v = old_v*d**dt + a*dt;
+      var old_p = this.p;
+      this.p = old_p + new_v * dt;
+      if (this.p[1] === 0) {
+        if (glMatrix.vec3.distance(this.p, old_p) < stop_dist) {
+          this.moving = false;
+          this.v = glMatrix.vec3.fromValues(0, 0, 0);
+        }
+      }
+    }
   }
 }
 
