@@ -46,13 +46,13 @@ const lDiffuse = [1.0, 1.0, 1.0];
 const lSpecular = [1.0, 1.0, 1.0];
 
 /** @global Gravity (m/s^2) */
-const g = glMatrix.vec3.fromValues(0, -9.81, 0);
+const gravity = glMatrix.vec3.fromValues(0, -9.81, 0);
 /** @global drag factor */
-const d = 0.95;
+const d = 0.999;
 /** @global collision slowing factor */
-const csf = 0.9;
+const csf = 0.99;
 /** @global Box size */
-const m = 2.0;
+const m = 3.0;
 /** @global Stop dist */
 const stop_dist = 0.01;
 /** @global previous time */
@@ -82,18 +82,15 @@ class Particle {
     if (this.moving) {
       glMatrix.vec3.scale(this.v, this.v, drag);
       glMatrix.vec3.add(this.v, this.v, dv);
-      //console.log(this.v)
-      //this.v = this.v*drag + dv;
       var old_p = this.pos;
       var dx = glMatrix.vec3.create();
       glMatrix.vec3.scale(dx, this.v, dt);
-      //console.log(dx);
       glMatrix.vec3.add(this.pos, this.pos, dx);
-
       //particle on floor
-      if (this.pos[1] === -m) {
-        if (glMatrix.vec3.distance(this.p, old_p) < stop_dist) {
+      if (Math.abs(this.pos[1] + m) < 0.01 * m) {
+        if (glMatrix.vec3.distance(this.pos, old_p) < stop_dist) {
           console.log("Stop moving");
+          console.log(this.pos);
           this.moving = false;
           this.v = glMatrix.vec3.fromValues(0, 0, 0);
         }
@@ -119,6 +116,7 @@ class Particle {
       }
       var index = first_wall[0];
       if (index != -1) { //collision has occurred
+        console.log("Collision", first_wall);
         var wall_normals = [glMatrix.vec3.fromValues(-1,  0,  0),
                             glMatrix.vec3.fromValues( 1,  0,  0),
                             glMatrix.vec3.fromValues( 0, -1,  0),
@@ -127,8 +125,16 @@ class Particle {
                             glMatrix.vec3.fromValues( 0,  0,  1)]
         var wn = wall_normals[index];
 
-        var coord = Math.floor(first_wall/2);
-        var tc = ((m - this.r) - old_p[coord])/this.v[coord];
+        var coord = Math.floor(first_wall[0]/2);
+        var negative = first_wall[0] % 2;
+        console.log("coord", coord);
+        var x;
+        if (negative)
+          x = m + this.r;
+        else
+          x = m - this.r;
+        var tc = (x - old_p[coord])/this.v[coord];
+        console.log((m - this.r) - old_p[coord]);
 
         glMatrix.vec3.scale(dx, this.v, tc);
         var hit_pos = glMatrix.vec3.create();
@@ -139,6 +145,20 @@ class Particle {
         glMatrix.vec3.scale(v1, wn, 2*dot);
         glMatrix.vec3.subtract(v1, this.v, v1);
         glMatrix.vec3.scale(this.v, v1, csf);
+        
+        this.pos = old_p;
+        /*
+        var t1 = dt - tc;
+        glMatrix.vec3.scale(v1, this.v, t1);
+        glMatrix.vec3.add(this.pos, hit_pos, v1);
+        
+        //this.moving = false;
+
+        console.log("hp:", hit_pos);
+        console.log("v:", this.v);
+        console.log("p:", this.pos);
+        */
+        //this.pos = old_p;
         //this.pos = hit_pos + this.v * (dt - tc); //might be out of bounds if on corners, can comment out if needed
       }
     }
@@ -185,7 +205,7 @@ function startup() {
   // Set the background color to black (you can change this if you like).    
   gl.clearColor(0.1, 0.1, 0.1, 1.0);
   gl.enable(gl.DEPTH_TEST);
-  //gl.enable(gl.CULL_FACE);
+  gl.enable(gl.CULL_FACE);
 
   // Start animating.
   requestAnimationFrame(animate);
@@ -193,18 +213,19 @@ function startup() {
 
 /** generate a random particle */
 function makeParticle() {
-  var x = 2*m*Math.random() - m;
-  var y = 2*m*Math.random() - m;
-  var z = 2*m*Math.random() - m;
+  var x = 0.9*m*(2*Math.random() - 1);
+  var y = 0.9*m*(2*Math.random() - 1);
+  var z = 0.9*m*(2*Math.random() - 1);
   var pos = glMatrix.vec3.fromValues(x, y, z);
 
   var vf = 0.1;
-  var vx = vf*(2*m*Math.random() - m);
-  var vy = vf*(2*m*Math.random() - m);
-  var vz = vf*(2*m*Math.random() - m);
+  var vx = m*vf*(2*Math.random() - 1);
+  var vy = m*vf*(2*Math.random() - 1);
+  var vz = m*vf*(2*Math.random() - 1);
   var v  = glMatrix.vec3.fromValues(vx, vy, vz);
 
-  var radius = 0.5 * (2*m*Math.random() - m);
+  //var radius = 0.6;
+  var radius = 0.2*m*Math.random() + 0.1;
   var mass = radius;
 
   var r = Math.floor(255.9999 * Math.random());
@@ -339,7 +360,8 @@ function animate(currentTime) {
     dt = 0;
   var drag = d**dt;
   var dv   = glMatrix.vec3.create();
-  glMatrix.vec3.scale(dv, g, dt);
+  glMatrix.vec3.scale(dv, gravity, dt);
+  //console.log(dv);
   // Set up the canvas for this frame
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
