@@ -49,10 +49,17 @@ const lSpecular = [1.0, 1.0, 1.0];
 const g = glMatrix.fromValues(0, -9.81, 0);
 /** @global drag factor */
 const d = 0.95;
+/** @global collision slowing factor */
+const csf = 0.9;
 /** @global Box size */
 const m = 10.0;
 /** @global Stop dist */
 const stop_dist = 0.01;
+/** @global previous time */
+var t;
+
+/** @global list of all particles in scene */
+var particles = [];
 
 class Particle {
   constructor(pos_0, v_0, m, r, color) {
@@ -67,27 +74,60 @@ class Particle {
 
   /**
    * Computes new position and velocity for the particle
-   * @param {float} dt - time elapsed since last frame
+   * @param {float} dt   - time elapsed since last frame
+   * @param {float} drag - d**dt, slowing factor
+   * @param {float} dv   - a*dt,  euler integrated change in velocity
    */
-  physics(dt) {
+  physics(dt, drag, dv) {
     if (this.moving) {
-      var a = g;
-      var old_v = this.v;
-      this.v = old_v*d**dt + a*dt;
+      this.v = this.v*drag + dv;
       var old_p = this.p;
-      this.p = old_p + new_v * dt;
+      this.p = old_p + this.v * dt;
+
+      //particle on floor
       if (this.p[1] === 0) {
         if (glMatrix.vec3.distance(this.p, old_p) < stop_dist) {
           this.moving = false;
           this.v = glMatrix.vec3.fromValues(0, 0, 0);
         }
       }
+
+      //collision detection
+      var first_wall = [-1, 0]; // [wall index, distance past wall]
+      for (var i = 0; i < 3; i++) {
+        var a =   this.p[i] + r - m;
+        var b = -(this.p[i] - r + m);
+        if (a >= 0) {
+          if (first_wall[1] < a) {
+            first_wall[0] = 2*i;
+            first_wall[1] = a;
+          }
+        }
+        else if (b >= 0) {
+          if (first_wall[1] < b) {
+            first_wall[0] = 2*i + 1;
+            first_wall[1] = b;
+          }
+        }
+      }
+      var index = first_wall[0];
+      if (index != -1) { //collision has occurred
+        var wall_normals = [glMatrix.vec3.fromValues(-1,  0,  0),
+                            glMatrix.vec3.fromValues( 1,  0,  0),
+                            glMatrix.vec3.fromValues( 0, -1,  0),
+                            glMatrix.vec3.fromValues( 0,  1,  0),
+                            glMatrix.vec3.fromValues( 0,  0, -1),
+                            glMatrix.vec3.fromValues( 0,  0,  1)]
+        var wn = wall_normals[index];
+        var coord = Math.floor(first_wall/2);
+        var tc = ((m - r) - old_p[coord])/this.v[coord];
+        var hit_pos = old_p + tc * this.v;
+        this.v = csf * (this.v - 2*(glMatrix.vec3.dot(this.v, wn))*wn);
+        this.p = hit_pos + this.v * (dt - tc); //might be out of bounds if on corners, can comment out if needed
+      }
     }
   }
 }
-
-/** @global list of all particles in scene */
-var particles = [];
 
 /**
  * Translates degrees to radians
@@ -131,6 +171,14 @@ function startup() {
   requestAnimationFrame(animate);
 }
 
+/**
+ * sets up particles in simulation
+ * @param {*} canvas 
+ * @returns 
+ */
+function setupParticles() {
+
+}
 
 /**
  * Creates a WebGL 2.0 context.
@@ -253,7 +301,6 @@ function animate(currentTime) {
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   
-  var modelMatrix = glMatrix.mat4.create();
   var viewMatrix = glMatrix.mat4.create();
 
   // Create the view matrix using lookat.
@@ -262,26 +309,30 @@ function animate(currentTime) {
   const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0); 
   glMatrix.mat4.lookAt(viewMatrix, eyePt, lookAtPt, up);
 
-  // Concatenate the model and view matrices.
-  // Remember matrix multiplication order is important.
-  glMatrix.mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
+  for (var i = 0; i < particles.length; i++) {
+    var modelMatrix = glMatrix.mat4.create();
+    glMatrix.mat4.translate(modelMatrix, modelMatrix, particles[i].pos);
+    // Concatenate the model and view matrices.
+    // Remember matrix multiplication order is important.
+    glMatrix.mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
 
-  setMatrixUniforms();
+    setMatrixUniforms();
 
-  // Transform the light position to view coordinates
-  var lightPosition = glMatrix.vec3.fromValues(5, 5, -5);
-  glMatrix.vec3.transformMat4(lightPosition, lightPosition, viewMatrix);
+    // Transform the light position to view coordinates
+    var lightPosition = glMatrix.vec3.fromValues(5, 5, -5);
+    glMatrix.vec3.transformMat4(lightPosition, lightPosition, viewMatrix);
 
-  setLightUniforms(lAmbient, lDiffuse, lSpecular, lightPosition);
-  setMaterialUniforms(kAmbient, kDiffuse, kSpecular, shininess);
+    setLightUniforms(lAmbient, lDiffuse, lSpecular, lightPosition);
+    setMaterialUniforms(kAmbient, kDiffuse, kSpecular, shininess);
 
-  // You can draw multiple spheres by changing the modelViewMatrix, calling
-  // setMatrixUniforms() again, and calling gl.drawArrays() again for each
-  // sphere. You can use the same sphere object and VAO for all of them,
-  // since they have the same triangle mesh.
-  sphere1.bindVAO();
-  gl.drawArrays(gl.TRIANGLES, 0, sphere1.numTriangles*3);
-  sphere1.unbindVAO();
+    // You can draw multiple spheres by changing the modelViewMatrix, calling
+    // setMatrixUniforms() again, and calling gl.drawArrays() again for each
+    // sphere. You can use the same sphere object and VAO for all of them,
+    // since they have the same triangle mesh.
+    sphere1.bindVAO();
+    gl.drawArrays(gl.TRIANGLES, 0, sphere1.numTriangles*3);
+    sphere1.unbindVAO();
+  }
 
   // Use this function as the callback to animate the next frame.
   requestAnimationFrame(animate);
