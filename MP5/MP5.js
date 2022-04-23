@@ -228,9 +228,9 @@ function makeParticle() {
   var radius = 0.2*m*Math.random() + 0.1;
   var mass = radius;
 
-  var r = Math.floor(255.9999 * Math.random());
-  var g = Math.floor(255.9999 * Math.random());
-  var b = Math.floor(255.9999 * Math.random());
+  var r = Math.random();
+  var g = Math.random();
+  var b = Math.random();
   var color = glMatrix.vec3.fromValues(r, g, b);
 
   var p = new Particle(pos, v, mass, radius, color);
@@ -395,7 +395,7 @@ function animate(currentTime) {
     glMatrix.vec3.transformMat4(lightPosition, lightPosition, viewMatrix);
 
     setLightUniforms(lAmbient, lDiffuse, lSpecular, lightPosition);
-    setMaterialUniforms(kAmbient, kDiffuse, kSpecular, shininess);
+    setMaterialUniforms(particle.color, particle.color, kSpecular, shininess);
 
     // You can draw multiple spheres by changing the modelViewMatrix, calling
     // setMatrixUniforms() again, and calling gl.drawArrays() again for each
