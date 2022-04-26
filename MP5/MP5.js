@@ -204,6 +204,10 @@ function keypress(e) {
   if (e.key === "ArrowDown") {
     particles.shift();
   }
+  if (e.key === "Backspace") {
+    particles = [];
+  }
+  console.log(e.key);
 }
 
 /** generate a random particle */
