@@ -46,11 +46,11 @@ const lDiffuse = [1.0, 1.0, 1.0];
 const lSpecular = [1.0, 1.0, 1.0];
 
 /** @global Gravity (m/s^2) */
-const gravity = glMatrix.vec3.fromValues(0, -9.81, 0);
+const gravity = glMatrix.vec3.fromValues(0, -50, 0); //-9.81 looked weird
 /** @global drag factor */
 const d = 0.999;
 /** @global collision slowing factor */
-const csf = 0.99;
+const csf = 0.97;
 /** @global Box size */
 const m = 3.0;
 /** @global Stop dist */
@@ -82,20 +82,20 @@ class Particle {
     if (this.moving) {
       glMatrix.vec3.scale(this.v, this.v, drag);
       glMatrix.vec3.add(this.v, this.v, dv);
-      var old_p = this.pos;
+      var old_p = glMatrix.vec3.create();
+      glMatrix.vec3.copy(old_p, this.pos);
+
       var dx = glMatrix.vec3.create();
       glMatrix.vec3.scale(dx, this.v, dt);
       glMatrix.vec3.add(this.pos, this.pos, dx);
+
       //particle on floor
       if ((this.pos[1] + m) < 0.01) {
         if (glMatrix.vec3.distance(this.pos, old_p) < stop_dist) {
-          console.log("Stop moving");
-          console.log(this.pos);
           this.moving = false;
           this.v = glMatrix.vec3.fromValues(0, 0, 0);
         }
       }
-
       //collision detection
       var first_wall = [-1, 0]; // [wall index, distance past wall]
       for (var i = 0; i < 3; i++) {
@@ -116,7 +116,6 @@ class Particle {
       }
       var index = first_wall[0];
       if (index != -1) { //collision has occurred
-        console.log("Collision", first_wall);
         var wall_normals = [glMatrix.vec3.fromValues(-1,  0,  0),
                             glMatrix.vec3.fromValues( 1,  0,  0),
                             glMatrix.vec3.fromValues( 0, -1,  0),
@@ -125,16 +124,14 @@ class Particle {
                             glMatrix.vec3.fromValues( 0,  0,  1)]
         var wn = wall_normals[index];
 
-        var coord = Math.floor(first_wall[0]/2);
-        var negative = first_wall[0] % 2;
-        console.log("coord", coord);
+        var coord = Math.floor(index/2);
+        var negative = index % 2;
         var x;
         if (negative)
-          x = m + this.r;
+          x = -m + this.r;
         else
           x = m - this.r;
         var tc = (x - old_p[coord])/this.v[coord];
-        console.log((m - this.r) - old_p[coord]);
 
         glMatrix.vec3.scale(dx, this.v, tc);
         var hit_pos = glMatrix.vec3.create();
@@ -146,20 +143,7 @@ class Particle {
         glMatrix.vec3.subtract(v1, this.v, v1);
         glMatrix.vec3.scale(this.v, v1, csf);
         
-        this.pos = old_p;
-        /*
-        var t1 = dt - tc;
-        glMatrix.vec3.scale(v1, this.v, t1);
-        glMatrix.vec3.add(this.pos, hit_pos, v1);
-        
-        //this.moving = false;
-
-        console.log("hp:", hit_pos);
-        console.log("v:", this.v);
-        console.log("p:", this.pos);
-        */
-        //this.pos = old_p;
-        //this.pos = hit_pos + this.v * (dt - tc); //might be out of bounds if on corners, can comment out if needed
+        this.pos = hit_pos;
       }
     }
   }
@@ -187,10 +171,9 @@ function startup() {
   // Compile and link a shader program.
   setupShaders();
 
-  var num_particles = 10; //document.getElementById("num_particles");
-  for (var i = 0; i < num_particles; i++) {
-    makeParticle();
-  }
+  //add listener for events
+  document.addEventListener("keydown", keypress);
+
   // Create a sphere mesh and set up WebGL buffers for it.
   sphere1 = new Sphere(5);
   sphere1.setupBuffers(shaderProgram);
@@ -209,6 +192,18 @@ function startup() {
 
   // Start animating.
   requestAnimationFrame(animate);
+}
+
+/**
+ * Handle keys for particle spawning
+ */
+function keypress(e) {
+  if (e.key === "ArrowUp") {
+    makeParticle();
+  }
+  if (e.key === "ArrowDown") {
+    particles.shift();
+  }
 }
 
 /** generate a random particle */
@@ -361,7 +356,7 @@ function animate(currentTime) {
   var drag = d**dt;
   var dv   = glMatrix.vec3.create();
   glMatrix.vec3.scale(dv, gravity, dt);
-  //console.log(dv);
+
   // Set up the canvas for this frame
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -370,13 +365,13 @@ function animate(currentTime) {
 
   // Create the view matrix using lookat.
   const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, 0.0);
-  const eyePt = glMatrix.vec3.fromValues(0.0, 0.0, 10.0);
+  const eyePt = glMatrix.vec3.fromValues(2*m, 2*m, 2*m);
   const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0); 
   glMatrix.mat4.lookAt(viewMatrix, eyePt, lookAtPt, up);
 
   for (var i = 0; i < particles.length; i++) {
     var particle = particles[i];
-    //console.log(dt, drag, dv);
+
     particle.physics(dt, drag, dv);
 
     var radius = particle.r;
@@ -384,6 +379,7 @@ function animate(currentTime) {
     var modelMatrix = glMatrix.mat4.create();
     glMatrix.mat4.fromScaling(modelMatrix, scale_vector);
     glMatrix.mat4.translate(modelMatrix, modelMatrix, particle.pos);
+
     // Concatenate the model and view matrices.
     // Remember matrix multiplication order is important.
     glMatrix.mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
@@ -391,7 +387,7 @@ function animate(currentTime) {
     setMatrixUniforms();
 
     // Transform the light position to view coordinates
-    var lightPosition = glMatrix.vec3.fromValues(5, 5, -5);
+    var lightPosition = glMatrix.vec3.fromValues(-10*m, 10.0*m, -10.0*m);
     glMatrix.vec3.transformMat4(lightPosition, lightPosition, viewMatrix);
 
     setLightUniforms(lAmbient, lDiffuse, lSpecular, lightPosition);

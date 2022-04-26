@@ -22,10 +22,10 @@
         var d = glMatrix.vec4.fromValues(0.816497, -0.471405, 0.333333, 0);
         
         // Subdivide each triangle the specified number of times.
-        this.numTriangles += this.subdivideTriangle(a, b, c, numSubDivisions);
-        this.numTriangles += this.subdivideTriangle(d, c, b, numSubDivisions);
-        this.numTriangles += this.subdivideTriangle(a, d, b, numSubDivisions);
-        this.numTriangles += this.subdivideTriangle(a, c, d, numSubDivisions);
+        this.numTriangles += this.subdivideTriangle(a, c, b, numSubDivisions);
+        this.numTriangles += this.subdivideTriangle(d, b, c, numSubDivisions);
+        this.numTriangles += this.subdivideTriangle(a, b, d, numSubDivisions);
+        this.numTriangles += this.subdivideTriangle(a, d, c, numSubDivisions);
     }
 
     /**
