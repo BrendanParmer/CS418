@@ -52,7 +52,7 @@ const d = 0.999;
 /** @global collision slowing factor */
 const csf = 0.97;
 /** @global Box size */
-const m = 3.0;
+const m = 5.0;
 /** @global Stop dist */
 const stop_dist = 0.01;
 /** @global previous time */
